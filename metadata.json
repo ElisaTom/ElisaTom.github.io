@@ -1,0 +1,7 @@
+{
+  "name": "Eli & Nic",
+  "description": "A comprehensive operating system for couples to track memories, activities, media, and love notes. Features Gemini-powered discovery and planning.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
