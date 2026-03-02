@@ -23,9 +23,18 @@ export const Storage = {
         } catch(e) { return []; }
     },
     
-    set: <T>(key: string, data: T[]) => {
+    set: <T>(key: string, data: T[], timestamp?: number) => {
         localStorage.setItem(key, JSON.stringify(data));
+        const ts = timestamp || Date.now();
+        const currentTs = Storage.getLastModified();
+        if (ts > currentTs) {
+            localStorage.setItem('db_last_modified', ts.toString());
+        }
         dispatch(key, data);
+    },
+
+    getLastModified: (): number => {
+        return parseInt(localStorage.getItem('db_last_modified') || '0');
     },
 
     // Generic Add

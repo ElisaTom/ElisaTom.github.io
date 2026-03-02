@@ -110,7 +110,7 @@ export const GoogleDriveService = {
         registry: Storage.get(KEYS.registry),
         loveNotes: Storage.get(KEYS.loveNotes),
         logs: Storage.get(KEYS.logs),
-        timestamp: Date.now()
+        timestamp: Storage.getLastModified()
       };
 
       if (!fileId) {

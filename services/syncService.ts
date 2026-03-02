@@ -64,7 +64,7 @@ export const SyncService = {
       registry: Storage.get(KEYS.registry),
       loveNotes: Storage.get(KEYS.loveNotes),
       logs: Storage.get(KEYS.logs),
-      timestamp: Date.now()
+      timestamp: Storage.getLastModified()
     };
     
     sendAction(payload);
@@ -97,7 +97,7 @@ export const SyncService = {
       });
 
       // Save back to storage
-      Storage.set(key, Array.from(map.values()));
+      Storage.set(key, Array.from(map.values()), remote.timestamp);
     };
 
     mergeCollection(KEYS.activities, remote.activities);
