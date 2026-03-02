@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { FoodSpot } from '../types';
+import { FoodSpot, Language } from '../types';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { Plus, Trash2, Utensils, MapPin, Loader } from 'lucide-react';
 import { getPlaceFromMaps } from '../services/geminiService';
+import { t } from '../i18n';
 
 interface Props {
   foodSpots: FoodSpot[];
   onAdd: (item: FoodSpot) => void;
   onDelete: (id: string) => void;
+  language: Language;
 }
 
-export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
+export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete, language }) => {
   const [showForm, setShowForm] = useState(false);
   const [newItem, setNewItem] = useState<Partial<FoodSpot>>({
     name: '', type: 'Italian', status: 'wishlist', 
@@ -69,7 +71,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-orange-900 dark:text-orange-300">Cibo & Drink</h2>
+        <h2 className="text-3xl font-bold text-orange-900 dark:text-orange-300">{t(language, "Food & Drink")}</h2>
         <button 
           onClick={() => setShowForm(!showForm)}
           className="p-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg shadow-orange-200 dark:shadow-none transition-all"
@@ -82,7 +84,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
         <form onSubmit={handleSubmit} className="glass-card p-6 rounded-3xl space-y-4 animate-slide-in dark:bg-slate-800">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nome Ristorante</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Restaurant Name")}</label>
               <div className="flex gap-2">
                 <input 
                   className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-orange-100 dark:border-orange-900 rounded-xl dark:text-white"
@@ -103,7 +105,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo Cucina</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Cuisine Type")}</label>
               <input 
                 className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-orange-100 dark:border-orange-900 rounded-xl dark:text-white"
                 value={newItem.type}
@@ -115,7 +117,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
           {/* Grounding Result */}
           {groundingResult && (
              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 rounded-xl text-sm">
-                <div className="font-bold text-orange-800 dark:text-orange-300 text-xs mb-1 uppercase tracking-wider">Gemini ha trovato:</div>
+                <div className="font-bold text-orange-800 dark:text-orange-300 text-xs mb-1 uppercase tracking-wider">Gemini found:</div>
                 <p className="text-slate-700 dark:text-slate-300 mb-2">{groundingResult.text}</p>
                 <div className="flex flex-wrap gap-2">
                   {groundingResult.chunks.map((chunk, i) => {
@@ -125,7 +127,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
                                 key={i} href={chunk.maps.uri} target="_blank" rel="noreferrer" 
                                 className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-700 border border-orange-200 dark:border-orange-800 rounded-lg text-xs font-bold text-orange-600 dark:text-orange-400 hover:scale-105 transition-transform"
                             >
-                                <MapPin className="w-3 h-3" /> {chunk.maps.title || 'Vedi su Maps'}
+                                <MapPin className="w-3 h-3" /> {chunk.maps.title || 'See on Maps'}
                             </a>
                         );
                     }
@@ -143,7 +145,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
                 onChange={() => setNewItem({...newItem, status: 'wishlist'})}
                 className="accent-orange-500 w-5 h-5"
               />
-              <span className="font-bold text-slate-700 dark:text-slate-300">Desideri</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">{t(language, "Wishlist")}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input 
@@ -152,7 +154,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
                 onChange={() => setNewItem({...newItem, status: 'visited'})}
                 className="accent-orange-500 w-5 h-5"
               />
-              <span className="font-bold text-slate-700 dark:text-slate-300">Visitati</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">{t(language, "Visited")}</span>
             </label>
           </div>
 
@@ -176,7 +178,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
                 ))}
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Recensione</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Review")}</label>
                 <textarea 
                   className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-orange-100 dark:border-orange-900 rounded-xl h-20 dark:text-white"
                   value={newItem.review}
@@ -187,7 +189,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
           )}
 
           <button type="submit" className="w-full py-3 bg-orange-600 text-white font-bold rounded-xl shadow-md">
-            Salva Posto
+            {t(language, "Save Spot")}
           </button>
         </form>
       )}
@@ -196,7 +198,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
       <div>
         <h3 className="text-lg font-bold text-orange-700 dark:text-orange-300 mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-orange-500" />
-          Diario Visite
+          {t(language, "Visited Journal")}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {visited.map(spot => (
@@ -240,7 +242,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
               )}
             </div>
           ))}
-          {visited.length === 0 && <p className="text-slate-400 italic">Nessun posto visitato ancora.</p>}
+          {visited.length === 0 && <p className="text-slate-400 italic">{t(language, "No visited spots yet")}</p>}
         </div>
       </div>
 
@@ -248,7 +250,7 @@ export const TabFood: React.FC<Props> = ({ foodSpots, onAdd, onDelete }) => {
       <div>
         <h3 className="text-lg font-bold text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-slate-300" />
-          Da Provare
+          {t(language, "To Devour")}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {wishlist.map(spot => (

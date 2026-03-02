@@ -1,17 +1,20 @@
 import React from 'react';
-import { Log } from '../types';
+import { Log, Language } from '../types';
 import { Calendar, Heart, Zap, Flame } from 'lucide-react';
 import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
+import { it, enUS } from 'date-fns/locale';
+import { t } from '../i18n';
 
 interface Props {
   logs: Log[];
   onNavigate: (tab: any) => void;
   dayCount: number;
+  language: Language;
 }
 
-export const TabHome: React.FC<Props> = ({ logs, onNavigate, dayCount }) => {
+export const TabHome: React.FC<Props> = ({ logs, onNavigate, dayCount, language }) => {
   const today = new Date();
+  const dateLocale = language === 'it' ? it : enUS;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -21,19 +24,18 @@ export const TabHome: React.FC<Props> = ({ logs, onNavigate, dayCount }) => {
           <div>
             <div className="flex items-center gap-2 mb-2 opacity-80">
                <Flame className="w-5 h-5 text-orange-300 fill-orange-300 animate-pulse" />
-               <span className="font-mono text-sm tracking-wider uppercase">Streak di Coppia</span>
+               <span className="font-mono text-sm tracking-wider uppercase">{t(language, "Couple Streak")}</span>
             </div>
             <h2 className="text-6xl md:text-8xl font-bold font-['Outfit'] tracking-tighter">
               {dayCount}
             </h2>
             <p className="text-lg opacity-90 font-medium mt-1">
-              Giorni di storia condivisa.
+              {t(language, "Days of shared history")}.
             </p>
           </div>
           
           <div className="text-right md:text-right hidden md:block">
-            <div className="text-sm opacity-60 font-mono mb-1">{format(today, 'EEEE, MMMM d', { locale: it })}</div>
-            <div className="text-xl font-bold">Mantenete viva la fiamma.</div>
+            <div className="text-sm opacity-60 font-mono mb-1">{format(today, 'EEEE, MMMM d', { locale: dateLocale })}</div>
           </div>
         </div>
         
@@ -53,8 +55,8 @@ export const TabHome: React.FC<Props> = ({ logs, onNavigate, dayCount }) => {
             <Calendar className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-bold text-lg text-slate-700 dark:text-white">Calendario</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Vedi timeline</p>
+            <h3 className="font-bold text-lg text-slate-700 dark:text-white">{t(language, "Calendar")}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t(language, "View timeline")}</p>
           </div>
         </button>
 
@@ -67,8 +69,8 @@ export const TabHome: React.FC<Props> = ({ logs, onNavigate, dayCount }) => {
             <Heart className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-bold text-lg text-slate-700 dark:text-white">Note d'Amore</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Ricarica partner</p>
+            <h3 className="font-bold text-lg text-slate-700 dark:text-white">{t(language, "Love Notes")}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t(language, "Boost partner")}</p>
           </div>
         </button>
 
@@ -82,8 +84,8 @@ export const TabHome: React.FC<Props> = ({ logs, onNavigate, dayCount }) => {
               <Zap className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-lg text-fuchsia-900 dark:text-fuchsia-100">Consiglio Oracolo</h3>
-              <p className="text-sm text-fuchsia-700 opacity-80 dark:text-fuchsia-300">Indecisi? Lasciate fare al sistema.</p>
+              <h3 className="font-bold text-lg text-fuchsia-900 dark:text-fuchsia-100">{t(language, "Oracle Suggestion")}</h3>
+              <p className="text-sm text-fuchsia-700 opacity-80 dark:text-fuchsia-300">{t(language, "Indecisive?")}</p>
             </div>
           </div>
         </button>

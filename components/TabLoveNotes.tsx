@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { LoveNote } from '../types';
+import { LoveNote, Language } from '../types';
 import { Heart, Send, Trash2, X, Sparkles, Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import { t } from '../i18n';
 
 interface Props {
   notes: LoveNote[];
   onAdd: (note: LoveNote) => void;
   onDelete: (id: string) => void;
+  language: Language;
 }
 
-export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
+export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete, language }) => {
   const [showForm, setShowForm] = useState(false);
   const [showVault, setShowVault] = useState(false);
   const [boostNote, setBoostNote] = useState<LoveNote | null>(null);
@@ -19,7 +21,7 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
   const handleBoost = (beneficiary: 'Him' | 'Her') => {
     const pool = notes.filter(n => n.beneficiary === beneficiary);
     if (pool.length === 0) {
-      alert(`Nessuna nota per ${beneficiary === 'Him' ? 'Lui' : 'Lei'} ancora! Aggiungine qualcuna.`);
+      alert(`${t(language, "No notes for")} ${beneficiary === 'Him' ? t(language, 'Him') : t(language, 'Her')} ${t(language, "yet! Add some.")}`);
       return;
     }
     const random = pool[Math.floor(Math.random() * pool.length)];
@@ -41,8 +43,8 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
   return (
     <div className="space-y-8 animate-fade-in relative">
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-pink-900 dark:text-pink-300">Note d'Amore</h2>
-        <p className="text-pink-600 dark:text-pink-400">Invia amore per riempire il serbatoio.</p>
+        <h2 className="text-3xl font-bold text-pink-900 dark:text-pink-300">{t(language, "Love Notes")}</h2>
+        <p className="text-pink-600 dark:text-pink-400">{t(language, "Send love to fill the tank")}</p>
       </div>
 
       {/* Boost Buttons */}
@@ -53,7 +55,7 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
         >
           <div className="relative z-10 flex flex-col items-center gap-2">
              <Heart className="w-12 h-12 fill-white/20" />
-             <span className="text-2xl font-bold">Boost Lui</span>
+             <span className="text-2xl font-bold">{t(language, "Boost Him")}</span>
           </div>
           <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 rounded-[2rem]" />
         </button>
@@ -64,7 +66,7 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
         >
           <div className="relative z-10 flex flex-col items-center gap-2">
              <Heart className="w-12 h-12 fill-white/20" />
-             <span className="text-2xl font-bold">Boost Lei</span>
+             <span className="text-2xl font-bold">{t(language, "Boost Her")}</span>
           </div>
            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 rounded-[2rem]" />
         </button>
@@ -77,13 +79,13 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
             onClick={() => setShowForm(true)}
             className="w-full py-4 border-2 border-dashed border-pink-300 rounded-2xl text-pink-400 font-bold hover:bg-pink-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
           >
-            <PlusIcon /> Scrivi una Nota
+            <PlusIcon /> {t(language, "Write a Note")}
           </button>
         ) : (
           <form onSubmit={handleSubmit} className="glass-card p-6 rounded-3xl space-y-4 dark:bg-slate-800">
              <textarea 
                className="w-full p-4 bg-white/50 dark:bg-slate-700/50 border border-pink-200 dark:border-pink-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-300 dark:text-white"
-               placeholder="Scrivi qualcosa di dolce..."
+               placeholder={t(language, "Write something sweet...")}
                value={newNote.text}
                onChange={e => setNewNote({...newNote, text: e.target.value})}
                rows={3}
@@ -95,14 +97,14 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
                    onClick={() => setNewNote({...newNote, beneficiary: 'Him'})}
                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${newNote.beneficiary === 'Him' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-200' : 'text-slate-400'}`}
                  >
-                   Per Lui
+                   {t(language, "For Him")}
                  </button>
                  <button 
                    type="button"
                    onClick={() => setNewNote({...newNote, beneficiary: 'Her'})}
                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${newNote.beneficiary === 'Her' ? 'bg-pink-100 text-pink-600 dark:bg-pink-900 dark:text-pink-200' : 'text-slate-400'}`}
                  >
-                   Per Lei
+                   {t(language, "For Her")}
                  </button>
                </div>
                <button type="submit" className="px-6 bg-pink-500 text-white rounded-xl hover:bg-pink-600 transition-colors">
@@ -119,13 +121,13 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
             onClick={() => setShowVault(!showVault)}
             className="flex items-center justify-center gap-2 w-full text-slate-400 text-xs font-bold uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
         >
-            <span>{showVault ? 'Chiudi' : 'Apri'} Il Caveau ({notes.length})</span>
+            <span>{showVault ? t(language, 'Close') : t(language, 'Open')} {t(language, "The Vault")} ({notes.length})</span>
             {showVault ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
 
         {showVault && (
             <div className="space-y-3 mt-6 animate-slide-in">
-                {notes.length === 0 && <p className="text-center text-slate-400 italic">Il caveau è vuoto.</p>}
+                {notes.length === 0 && <p className="text-center text-slate-400 italic">{t(language, "The vault is empty")}</p>}
                 {notes.map(note => (
                     <div key={note.id} className="glass-card p-4 rounded-2xl flex items-center gap-4 group opacity-80 hover:opacity-100 dark:bg-slate-800">
                         <div className={`p-3 rounded-full ${note.beneficiary === 'Him' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-500' : 'bg-pink-100 dark:bg-pink-900 text-pink-500'}`}>
@@ -134,12 +136,12 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
                         <div className="flex-1">
                             {/* Obscured Text to preserve surprise */}
                             <p className="text-slate-400 dark:text-slate-500 font-mono text-sm tracking-widest">••••••••••••••••••••</p> 
-                            <span className="text-xs text-slate-400 dark:text-slate-500">{note.date} • Per {note.beneficiary === 'Him' ? 'Lui' : 'Lei'}</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500">{note.date} • {t(language, "For")} {note.beneficiary === 'Him' ? t(language, 'Him') : t(language, 'Her')}</span>
                         </div>
                         <button 
                             onClick={() => onDelete(note.id)}
                             className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
-                            title="Elimina per sempre"
+                            title={t(language, "Delete forever")}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -167,7 +169,7 @@ export const TabLoveNotes: React.FC<Props> = ({ notes, onAdd, onDelete }) => {
              </h3>
              
              <div className="text-sm text-slate-400 font-mono">
-               Inviato il {boostNote.date}
+               {t(language, "Sent on")} {boostNote.date}
              </div>
           </div>
         </div>

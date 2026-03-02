@@ -1,9 +1,11 @@
 import React from 'react';
-import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor } from '../types';
+import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor, Language } from '../types';
 import { format } from 'date-fns';
-import { Download, Upload, Database, Moon, Sun, Palette, Check, RefreshCw } from 'lucide-react';
+import { Download, Upload, Database, Moon, Sun, Palette, Check, RefreshCw, Languages, Cloud, CloudOff } from 'lucide-react';
 import { DataService } from '../services/dataService';
 import { resetFirebaseConfig } from '../services/firebase';
+import { GoogleDriveService } from '../services/googleDriveService';
+import { t } from '../i18n';
 
 interface Props {
   logs: Log[];
@@ -16,11 +18,14 @@ interface Props {
   setTheme: (t: ThemeMode) => void;
   themeColor: ThemeColor;
   setThemeColor: (c: ThemeColor) => void;
+  language: Language;
+  setLanguage: (l: Language) => void;
 }
 
 export const TabSettings: React.FC<Props> = ({ 
   logs, activities, foodSpots, movies, registry, loveNotes, 
-  theme, setTheme, themeColor, setThemeColor 
+  theme, setTheme, themeColor, setThemeColor,
+  language, setLanguage
 }) => {
   
   const handleExport = () => {
@@ -38,14 +43,14 @@ export const TabSettings: React.FC<Props> = ({
     document.body.removeChild(a);
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
-        if(!confirm("Questo unirà i dati importati nel database attuale. Continuare?")) return;
+        if(!confirm(t(language, "This will merge imported data into your current database. Continue?"))) return;
         
         if(json.activities) json.activities.forEach((i: any) => DataService.activities.add(i));
         if(json.logs) json.logs.forEach((i: any) => DataService.logs.add(i));
@@ -54,29 +59,55 @@ export const TabSettings: React.FC<Props> = ({
         if(json.registry) json.registry.forEach((i: any) => DataService.registry.add(i));
         if(json.loveNotes) json.loveNotes.forEach((i: any) => DataService.loveNotes.add(i));
         
-        alert("Importazione Completata!");
+        alert(t(language, "Import Complete!"));
       } catch (err) {
-        alert("File JSON non valido");
+        alert(t(language, "Invalid JSON file"));
       }
     };
     reader.readAsText(file);
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/google/url');
+      const { url } = await response.json();
+      const authWindow = window.open(url, 'google_auth', 'width=600,height=700');
+      
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+          GoogleDriveService.setTokens(event.data.tokens);
+          window.location.reload(); // Reload to trigger sync
+        }
+      };
+      window.addEventListener('message', handleMessage);
+    } catch (error) {
+      console.error('Google Login Error:', error);
+    }
+  };
+
+  const handleGoogleLogout = () => {
+    if (confirm("Disconnect Google Drive? Local data will remain.")) {
+      GoogleDriveService.clearTokens();
+      window.location.reload();
+    }
+  };
+
+  const isGoogleConnected = GoogleDriveService.isAuthenticated();
+
   return (
     <div className="space-y-8 animate-fade-in pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Impostazioni Sistema</h2>
-          <p className="text-slate-500 dark:text-slate-400">Configura il tuo Couple OS.</p>
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-white">{t(language, "System Settings")}</h2>
         </div>
       </div>
 
       {/* --- SECTION: APPEARANCE --- */}
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-          <Palette className="w-4 h-4" /> Aspetto
+          <Palette className="w-4 h-4" /> {t(language, "Appearance")}
         </h3>
-        
+
         {/* Theme Mode */}
         <div className="glass-card p-4 rounded-2xl flex items-center justify-between dark:bg-slate-800">
            <div className="flex items-center gap-4">
@@ -84,8 +115,8 @@ export const TabSettings: React.FC<Props> = ({
                 {theme === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </div>
               <div>
-                <h4 className="font-bold text-slate-700 dark:text-slate-200">Tema</h4>
-                <p className="text-xs text-slate-400">{theme === 'light' ? 'Chiaro Minimal' : 'Scuro Minimal'}</p>
+                <h4 className="font-bold text-slate-700 dark:text-slate-200">{t(language, "Theme")}</h4>
+                <p className="text-xs text-slate-400">{theme === 'light' ? t(language, 'Minimal Light') : t(language, 'Minimal Dark')}</p>
               </div>
            </div>
            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
@@ -111,8 +142,8 @@ export const TabSettings: React.FC<Props> = ({
                  <Palette className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-slate-700 dark:text-slate-200">Colore Tema</h4>
-                <p className="text-xs text-slate-400">Colore Accento</p>
+                <h4 className="font-bold text-slate-700 dark:text-slate-200">{t(language, "Theme Color")}</h4>
+                <p className="text-xs text-slate-400">{t(language, "Accent Color")}</p>
               </div>
            </div>
            <div className="flex flex-wrap gap-2 pt-2">
@@ -145,10 +176,28 @@ export const TabSettings: React.FC<Props> = ({
       {/* --- SECTION: DATA MANAGEMENT --- */}
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-          <Database className="w-4 h-4" /> Gestione Dati
+          <Database className="w-4 h-4" /> {t(language, "Data Management")}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           {/* Google Drive Sync */}
+           <button 
+             onClick={isGoogleConnected ? handleGoogleLogout : handleGoogleLogin}
+             className={`glass-card p-6 rounded-2xl flex flex-col items-center gap-3 transition-colors group text-center md:col-span-2 ${isGoogleConnected ? 'bg-emerald-50/50 dark:bg-emerald-900/20' : 'hover:bg-white/60 dark:bg-slate-800 dark:hover:bg-slate-700'}`}
+           >
+              <div className={`p-3 rounded-full group-hover:scale-110 transition-transform ${isGoogleConnected ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300'}`}>
+                {isGoogleConnected ? <Cloud className="w-6 h-6" /> : <CloudOff className="w-6 h-6" />}
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-700 dark:text-slate-200">
+                  {isGoogleConnected ? 'Google Drive Connected' : 'Connect Google Drive'}
+                </h4>
+                <p className="text-xs text-slate-400">
+                  {isGoogleConnected ? 'Your data is automatically synced to the cloud' : 'Enable cloud sync to keep devices in sync'}
+                </p>
+              </div>
+           </button>
+
            {/* Export */}
            <button 
              onClick={handleExport}
@@ -158,8 +207,8 @@ export const TabSettings: React.FC<Props> = ({
                 <Download className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-bold text-slate-700 dark:text-slate-200">Backup Dati</h4>
-                <p className="text-xs text-slate-400">Scarica file JSON</p>
+                <h4 className="font-bold text-slate-700 dark:text-slate-200">{t(language, "Backup Data")}</h4>
+                <p className="text-xs text-slate-400">{t(language, "Download JSON file")}</p>
               </div>
            </button>
 
@@ -169,8 +218,8 @@ export const TabSettings: React.FC<Props> = ({
                 <Upload className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-bold text-slate-700 dark:text-slate-200">Ripristina Dati</h4>
-                <p className="text-xs text-slate-400">Importa file JSON</p>
+                <h4 className="font-bold text-slate-700 dark:text-slate-200">{t(language, "Restore Data")}</h4>
+                <p className="text-xs text-slate-400">{t(language, "Import JSON file")}</p>
               </div>
               <input 
                 type="file" 
@@ -184,18 +233,18 @@ export const TabSettings: React.FC<Props> = ({
         {/* Reset Connection */}
         <button 
            onClick={() => {
-              if(confirm("Sei sicuro? Questo disconnetterà il database e richiederà nuovamente la configurazione.")) {
+              if(confirm(t(language, "Are you sure? This will disconnect the database and require reconfiguration."))) {
                   resetFirebaseConfig();
               }
            }}
            className="w-full mt-4 p-4 border border-rose-200 dark:border-rose-900 rounded-2xl flex items-center justify-center gap-2 text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors text-sm font-bold"
         >
-           <RefreshCw className="w-4 h-4" /> Resetta Connessione Database
+           <RefreshCw className="w-4 h-4" /> {t(language, "Reset Database Connection")}
         </button>
       </div>
 
       <div className="text-center pt-8 text-slate-300 text-xs font-mono">
-        Eli & Nic Couple OS • Build 2025.1
+        Eli & Nic Couple OS
       </div>
     </div>
   );

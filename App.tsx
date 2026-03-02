@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { DataService } from './services/dataService';
 import { Config } from './services/storage';
 import { SyncService } from './services/syncService';
-import { TabId, Activity, Log, FoodSpot, LoveNote, RegistryItem, Movie, ThemeMode, ThemeColor } from './types';
+import { TabId, Activity, Log, FoodSpot, LoveNote, RegistryItem, Movie, ThemeMode, ThemeColor, Language } from './types';
 import { Navigation } from './components/Navigation';
 import { TabHome } from './components/TabHome';
 import { TabMemories } from './components/TabMemories';
@@ -15,7 +15,9 @@ import { TabMedia } from './components/TabMedia';
 import { TabSettings } from './components/TabSettings';
 import { TabInsights } from './components/TabInsights';
 import { differenceInDays, parseISO } from 'date-fns';
-import { Heart, Wifi, WifiOff, Users, ArrowRight, Lock } from 'lucide-react';
+import { Heart, Wifi, WifiOff, Users, ArrowRight, Lock, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { GoogleDriveService, GoogleTokens } from './services/googleDriveService';
+import { t } from './i18n';
 
 const PRISM_THEME_MAP: Record<TabId, string> = {
   home: 'text-slate-600 dark:text-slate-300',
@@ -54,6 +56,26 @@ const PASTEL_THEMES: Record<Exclude<ThemeColor, 'prism'>, { text: string, bg: st
 // --- SIMPLIFIED SETUP WIZARD ---
 const SetupWizard = ({ onComplete }: { onComplete: () => void }) => {
   const [roomCode, setRoomCode] = useState('');
+  const [isGoogleSync, setIsGoogleSync] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/google/url');
+      const { url } = await response.json();
+      const authWindow = window.open(url, 'google_auth', 'width=600,height=700');
+      
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+          GoogleDriveService.setTokens(event.data.tokens);
+          setIsGoogleSync(true);
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+      window.addEventListener('message', handleMessage);
+    } catch (error) {
+      console.error('Google Login Error:', error);
+    }
+  };
 
   const handleStart = () => {
       if(!roomCode) return;
@@ -70,21 +92,21 @@ const SetupWizard = ({ onComplete }: { onComplete: () => void }) => {
         </div>
         
         <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-white font-['Outfit']">Benvenuti</h1>
-            <p className="text-slate-500 dark:text-slate-400">Inserite una parola segreta di coppia.</p>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-white font-['Outfit']">Welcome</h1>
+            <p className="text-slate-500 dark:text-slate-400">Enter your couple's secret word.</p>
         </div>
 
         <div className="bg-slate-100 dark:bg-slate-900 p-6 rounded-2xl text-left space-y-4">
              <div className="flex items-start gap-3">
                 <Lock className="w-5 h-5 text-slate-400 mt-1 shrink-0" />
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Scegliete una password unica (es. <code>eli-nic-love-25</code>).
+                    Choose a unique password (e.g., <code>eli-nic-love-25</code>).
                 </p>
              </div>
              <div className="flex items-start gap-3">
                 <Users className="w-5 h-5 text-slate-400 mt-1 shrink-0" />
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Usate la <b>stessa password</b> su entrambi i telefoni per connettervi.
+                    Use the <b>same password</b> on both phones to connect.
                 </p>
              </div>
         </div>
@@ -92,16 +114,27 @@ const SetupWizard = ({ onComplete }: { onComplete: () => void }) => {
         <div className="space-y-4">
             <input 
                 className="w-full text-center text-2xl font-bold tracking-widest p-4 rounded-xl bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 focus:border-indigo-500 outline-none uppercase dark:text-white placeholder:text-slate-300"
-                placeholder="CODICE"
+                placeholder="CODE"
                 value={roomCode}
                 onChange={e => setRoomCode(e.target.value.toUpperCase().replace(/\s/g,''))}
             />
+            
+            <div className="pt-2">
+              <button 
+                onClick={handleGoogleLogin}
+                className={`w-full py-3 rounded-xl border-2 flex items-center justify-center gap-2 font-bold transition-all ${isGoogleSync ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              >
+                {isGoogleSync ? <Cloud className="w-5 h-5" /> : <CloudOff className="w-5 h-5" />}
+                {isGoogleSync ? 'Google Drive Linked' : 'Link Google Drive (Cloud Sync)'}
+              </button>
+            </div>
+
             <button 
                 onClick={handleStart}
                 disabled={!roomCode}
                 className="w-full py-4 bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
             >
-                Inizia <ArrowRight className="w-5 h-5" />
+                Start <ArrowRight className="w-5 h-5" />
             </button>
         </div>
       </div>
@@ -114,13 +147,36 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [theme, setTheme] = useState<ThemeMode>('light');
   const [themeColor, setThemeColor] = useState<ThemeColor>('prism');
+  const language: Language = 'en';
   const [peersCount, setPeersCount] = useState(0);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [isCloudConnected, setIsCloudConnected] = useState(GoogleDriveService.isAuthenticated());
+
+  // Cloud Sync Loop
+  useEffect(() => {
+    if (!isSetup || !isCloudConnected) return;
+
+    const runSync = async () => {
+      setIsCloudSyncing(true);
+      const remoteData = await GoogleDriveService.sync();
+      if (remoteData) {
+        SyncService.merge(remoteData);
+      }
+      setIsCloudSyncing(false);
+    };
+
+    runSync(); // Initial sync
+    const interval = setInterval(runSync, 30000); // Every 30 seconds
+    return () => clearInterval(interval);
+  }, [isSetup, isCloudConnected]);
 
   // Check initial config
   useEffect(() => {
       const conf = Config.get();
       if(conf.isConfigured && conf.roomId) {
           setIsSetup(true);
+          if (conf.theme) setTheme(conf.theme);
+          if (conf.themeColor) setThemeColor(conf.themeColor);
           // Auto-connect sync
           SyncService.connect(conf.roomId, (count) => setPeersCount(count));
       }
@@ -147,12 +203,38 @@ export default function App() {
   useEffect(() => {
     if(!isSetup) return;
 
-    const unsubActivities = DataService.activities.subscribe(setActivities);
-    const unsubLogs = DataService.logs.subscribe(setLogs);
-    const unsubFood = DataService.food.subscribe(setFood);
-    const unsubNotes = DataService.loveNotes.subscribe(setNotes);
-    const unsubRegistry = DataService.registry.subscribe(setRegistry);
-    const unsubMovies = DataService.movies.subscribe(setMovies);
+    const runCloudSync = () => {
+      if (isCloudConnected && !isCloudSyncing) {
+        GoogleDriveService.sync().then(remoteData => {
+          if (remoteData) SyncService.merge(remoteData);
+        });
+      }
+    };
+
+    const unsubActivities = DataService.activities.subscribe((data) => {
+      setActivities(data);
+      runCloudSync();
+    });
+    const unsubLogs = DataService.logs.subscribe((data) => {
+      setLogs(data);
+      runCloudSync();
+    });
+    const unsubFood = DataService.food.subscribe((data) => {
+      setFood(data);
+      runCloudSync();
+    });
+    const unsubNotes = DataService.loveNotes.subscribe((data) => {
+      setNotes(data);
+      runCloudSync();
+    });
+    const unsubRegistry = DataService.registry.subscribe((data) => {
+      setRegistry(data);
+      runCloudSync();
+    });
+    const unsubMovies = DataService.movies.subscribe((data) => {
+      setMovies(data);
+      runCloudSync();
+    });
 
     return () => {
       unsubActivities();
@@ -205,6 +287,16 @@ export default function App() {
   const handleDeleteMovie = (id: string) => DataService.movies.delete(id);
   const handleAddLog = (log: Log) => DataService.logs.add(log);
 
+  const handleSetTheme = (t: ThemeMode) => {
+    setTheme(t);
+    Config.set({ theme: t });
+  };
+
+  const handleSetThemeColor = (c: ThemeColor) => {
+    setThemeColor(c);
+    Config.set({ themeColor: c });
+  };
+
   if (!isSetup) {
       return <SetupWizard onComplete={() => {
           const conf = Config.get();
@@ -217,42 +309,78 @@ export default function App() {
     <div className={`flex min-h-screen transition-colors duration-700 ease-in-out ${themeClasses.bg}`}>
       
       {/* Sync Status Indicator */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-full shadow-sm text-xs font-bold border border-slate-200 dark:border-slate-700">
-         {peersCount > 0 ? (
-             <>
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-emerald-600 dark:text-emerald-400">Connessi</span>
-             </>
-         ) : (
-             <>
-                <WifiOff className="w-3 h-3 text-slate-400" />
-                <span className="text-slate-400">Offline</span>
-             </>
-         )}
+      <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-full shadow-sm text-xs font-bold border border-slate-200 dark:border-slate-700">
+          {peersCount > 0 ? (
+              <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-emerald-600 dark:text-emerald-400">Connected</span>
+              </>
+          ) : (
+              <>
+                  <WifiOff className="w-3 h-3 text-slate-400" />
+                  <span className="text-slate-400">Offline</span>
+              </>
+          )}
+        </div>
+
+        {isCloudConnected && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-full shadow-sm text-xs font-bold border border-slate-200 dark:border-slate-700">
+            <button 
+              onClick={async () => {
+                setIsCloudSyncing(true);
+                const remoteData = await GoogleDriveService.sync();
+                if (remoteData) SyncService.merge(remoteData);
+                setIsCloudSyncing(false);
+              }}
+              disabled={isCloudSyncing}
+              className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+            >
+              <Cloud className={`w-3 h-3 ${isCloudSyncing ? 'text-blue-500 animate-pulse' : 'text-emerald-500'}`} />
+              <span className={isCloudSyncing ? 'text-blue-600' : 'text-emerald-600'}>
+                {isCloudSyncing ? 'Syncing...' : 'Cloud Synced'}
+              </span>
+              {!isCloudSyncing && <RefreshCw className="w-3 h-3 text-slate-400" />}
+            </button>
+          </div>
+        )}
       </div>
 
       <Navigation 
         activeTab={activeTab} 
         onTabChange={setActiveTab} 
         colorClass={themeClasses.text} 
+        language={language}
       />
       <main className="flex-1 h-[100dvh] overflow-y-auto relative">
         <div className="max-w-7xl mx-auto px-4 pt-24 pb-24 md:p-8 md:pt-8">
           {(() => {
             switch (activeTab) {
-                case 'home': return <TabHome logs={logs} onNavigate={setActiveTab} dayCount={streak} />;
-                case 'memories': return <TabMemories logs={logs} onAddLog={handleAddLog} />;
-                case 'discovery': return <TabDiscovery activities={activities} foodSpots={food} movies={movies} />;
-                case 'activities': return <TabActivities activities={activities} onAdd={handleAddActivity} onDelete={handleDeleteActivity} />;
-                case 'food': return <TabFood foodSpots={food} onAdd={handleAddFood} onDelete={handleDeleteFood} />;
-                case 'wishlist': return <TabWishlist items={registry} onAdd={handleAddRegistry} onUpdate={handleUpdateRegistry} onDelete={handleDeleteRegistry} />;
-                case 'lovenotes': return <TabLoveNotes notes={notes} onAdd={handleAddNote} onDelete={handleDeleteNote} />;
-                case 'media': return <TabMedia movies={movies} onAdd={handleAddMovie} onUpdate={handleUpdateMovie} onDelete={handleDeleteMovie} />;
-                case 'insights': return <TabInsights logs={logs} />;
-                case 'settings': return <TabSettings logs={logs} activities={activities} foodSpots={food} movies={movies} registry={registry} loveNotes={notes} theme={theme} setTheme={setTheme} themeColor={themeColor} setThemeColor={setThemeColor} />;
+                case 'home': return <TabHome logs={logs} onNavigate={setActiveTab} dayCount={streak} language={language} />;
+                case 'memories': return <TabMemories logs={logs} onAddLog={handleAddLog} language={language} />;
+                case 'discovery': return <TabDiscovery activities={activities} foodSpots={food} movies={movies} language={language} />;
+                case 'activities': return <TabActivities activities={activities} onAdd={handleAddActivity} onDelete={handleDeleteActivity} language={language} />;
+                case 'food': return <TabFood foodSpots={food} onAdd={handleAddFood} onDelete={handleDeleteFood} language={language} />;
+                case 'wishlist': return <TabWishlist items={registry} onAdd={handleAddRegistry} onUpdate={handleUpdateRegistry} onDelete={handleDeleteRegistry} language={language} />;
+                case 'lovenotes': return <TabLoveNotes notes={notes} onAdd={handleAddNote} onDelete={handleDeleteNote} language={language} />;
+                case 'media': return <TabMedia movies={movies} onAdd={handleAddMovie} onUpdate={handleUpdateMovie} onDelete={handleDeleteMovie} language={language} />;
+                case 'insights': return <TabInsights logs={logs} language={language} />;
+                case 'settings': return <TabSettings 
+                  logs={logs} 
+                  activities={activities} 
+                  foodSpots={food} 
+                  movies={movies} 
+                  registry={registry} 
+                  loveNotes={notes} 
+                  theme={theme} 
+                  setTheme={handleSetTheme} 
+                  themeColor={themeColor} 
+                  setThemeColor={handleSetThemeColor}
+                  language={language}
+                />;
                 default: return null;
             }
           })()}

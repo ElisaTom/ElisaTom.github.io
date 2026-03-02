@@ -1,17 +1,19 @@
 import React, { useMemo, useState } from 'react';
-import { Log } from '../types';
+import { Log, Language } from '../types';
 import { format, isSameMonth, subMonths, addMonths, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { TrendingUp, TrendingDown, Minus, MapPin, Utensils, Film, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import { it } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
+import { t } from '../i18n';
 
 interface Props {
   logs: Log[];
+  language: Language;
 }
 
-export const TabInsights: React.FC<Props> = ({ logs }) => {
+export const TabInsights: React.FC<Props> = ({ logs, language }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const dateLocale = it;
+  const dateLocale = enUS;
 
   const analysis = useMemo(() => {
     const prevDate = subMonths(currentDate, 1);
@@ -54,7 +56,7 @@ export const TabInsights: React.FC<Props> = ({ logs }) => {
     const diff = curr - prev;
     if (diff > 0) return <div className="flex items-center text-emerald-500 text-xs font-bold gap-1"><TrendingUp className="w-3 h-3" /> +{diff}</div>;
     if (diff < 0) return <div className="flex items-center text-rose-500 text-xs font-bold gap-1"><TrendingDown className="w-3 h-3" /> {diff}</div>;
-    return <div className="flex items-center text-slate-400 text-xs font-bold gap-1"><Minus className="w-3 h-3" /> Uguale</div>;
+    return <div className="flex items-center text-slate-400 text-xs font-bold gap-1"><Minus className="w-3 h-3" /> {t(language, "Same")}</div>;
   };
 
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
@@ -67,8 +69,8 @@ export const TabInsights: React.FC<Props> = ({ logs }) => {
     <div className="space-y-8 animate-fade-in pb-20">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Analisi</h2>
-          <p className="text-slate-500 dark:text-slate-400">Panoramica storica delle attività.</p>
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-white">{t(language, "Insights")}</h2>
+          <p className="text-slate-500 dark:text-slate-400">{t(language, "Historical overview of your activities")}</p>
         </div>
       </div>
 
@@ -93,11 +95,11 @@ export const TabInsights: React.FC<Props> = ({ logs }) => {
       {/* Global Activity Card */}
       <div className="glass-card p-6 rounded-[2rem] bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-blue-100 dark:border-slate-700">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-blue-900 dark:text-blue-100 font-bold text-lg">Interazioni Totali</span>
+            <span className="text-blue-900 dark:text-blue-100 font-bold text-lg">{t(language, "Total Interactions")}</span>
             <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{analysis.current.total}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500 dark:text-slate-400">vs Mese Scorso ({analysis.last.total})</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">{t(language, "vs Mese Scorso")} ({analysis.last.total})</span>
             {renderTrend(analysis.current.total, analysis.last.total)}
           </div>
           
@@ -117,11 +119,11 @@ export const TabInsights: React.FC<Props> = ({ logs }) => {
               <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><MapPin className="w-5 h-5"/></div>
               {renderTrend(analysis.current.activity.count, analysis.last.activity.count)}
             </div>
-            <h4 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase mb-1">Avventure</h4>
-            <div className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{analysis.current.activity.count} <span className="text-sm font-normal text-slate-400">eventi</span></div>
+            <h4 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase mb-1">{t(language, "Adventures")}</h4>
+            <div className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{analysis.current.activity.count} <span className="text-sm font-normal text-slate-400">{t(language, "events")}</span></div>
             {analysis.current.activity.top && (
               <div className="text-xs bg-emerald-50 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full inline-block">
-                Ossessione: <b>{analysis.current.activity.top}</b>
+                {t(language, "Obsession")}: <b>{analysis.current.activity.top}</b>
               </div>
             )}
           </div>
@@ -132,14 +134,14 @@ export const TabInsights: React.FC<Props> = ({ logs }) => {
               <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-xl"><Utensils className="w-5 h-5"/></div>
               {renderTrend(analysis.current.food.count, analysis.last.food.count)}
             </div>
-            <h4 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase mb-1">Ristoranti</h4>
-            <div className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{analysis.current.food.count} <span className="text-sm font-normal text-slate-400">visite</span></div>
+            <h4 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase mb-1">{t(language, "Dining")}</h4>
+            <div className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{analysis.current.food.count} <span className="text-sm font-normal text-slate-400">{t(language, "visits")}</span></div>
             {analysis.current.food.top ? (
                 <div className="text-xs bg-orange-50 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 px-3 py-1 rounded-full inline-block">
-                  Preferito: <b>{analysis.current.food.top}</b>
+                  {t(language, "Favorite")}: <b>{analysis.current.food.top}</b>
                 </div>
             ) : (
-                <div className="text-xs text-slate-400 italic">Prova qualcosa di nuovo!</div>
+                <div className="text-xs text-slate-400 italic">{t(language, "Try something new!")}</div>
             )}
           </div>
 
@@ -149,11 +151,11 @@ export const TabInsights: React.FC<Props> = ({ logs }) => {
               <div className="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-xl"><Film className="w-5 h-5"/></div>
               {renderTrend(analysis.current.media.count, analysis.last.media.count)}
             </div>
-            <h4 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase mb-1">Cinema/TV</h4>
-            <div className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{analysis.current.media.count} <span className="text-sm font-normal text-slate-400">visti</span></div>
+            <h4 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase mb-1">{t(language, "Cinema/TV")}</h4>
+            <div className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{analysis.current.media.count} <span className="text-sm font-normal text-slate-400">{t(language, "watched")}</span></div>
             {analysis.current.media.top && (
                 <div className="text-xs bg-rose-50 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 px-3 py-1 rounded-full inline-block">
-                  Maratona: <b>{analysis.current.media.top}</b>
+                  {t(language, "Binged")}: <b>{analysis.current.media.top}</b>
                 </div>
             )}
           </div>

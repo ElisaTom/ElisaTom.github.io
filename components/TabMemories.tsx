@@ -1,28 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { Log } from '../types';
+import { Log, Language } from '../types';
 import { differenceInDays, addYears, isPast, getYear, format, getDaysInMonth, startOfMonth, getDay, addMonths, subMonths } from 'date-fns';
 import { X, Calendar as CalendarIcon, MapPin, Film, Utensils, ChevronLeft, ChevronRight, Plus, Star } from 'lucide-react';
-import { it } from 'date-fns/locale';
+import { it, enUS } from 'date-fns/locale';
+import { t } from '../i18n';
 
 interface Props {
   logs: Log[];
   onAddLog: (log: Log) => void;
+  language: Language;
 }
 
-const MILESTONES = [
-  { label: "Compleanno Nic", date: '03-10', icon: '🎂' },
-  { label: "Anniversario", date: '10-07', icon: '💑' },
-  { label: "Compleanno Eli", date: '11-07', icon: '🎂' },
-];
-
-const SPECIAL_EVENTS: Record<string, { type: 'bday' | 'love', label: string }> = {
-  '03-10': { type: 'bday', label: "Buon Compleanno Nic!" },
-  '11-07': { type: 'bday', label: "Buon Compleanno Eli!" },
-  '10-07': { type: 'love', label: "Buon Anniversario!" },
-  '02-14': { type: 'love', label: "Buon San Valentino!" },
-};
-
-export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
+export const TabMemories: React.FC<Props> = ({ logs, onAddLog, language }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -30,7 +19,20 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
     title: '', type: 'other', rating: 5, notes: ''
   });
 
-  const dateLocale = it;
+  const dateLocale = language === 'it' ? it : enUS;
+
+  const MILESTONES = [
+    { label: "Nic's Birthday", date: '03-10', icon: '🎂' },
+    { label: "Anniversary", date: '10-07', icon: '💑' },
+    { label: "Eli's Birthday", date: '11-07', icon: '🎂' },
+  ];
+
+  const SPECIAL_EVENTS: Record<string, { type: 'bday' | 'love', label: string }> = {
+    '03-10': { type: 'bday', label: t(language, "Happy Birthday Nic") },
+    '11-07': { type: 'bday', label: t(language, "Happy Birthday Eli") },
+    '10-07': { type: 'love', label: t(language, "Happy Anniversary") },
+    '02-14': { type: 'love', label: t(language, "Happy Valentine") },
+  };
 
   // --- Milestones Logic ---
   const milestones = MILESTONES.map(m => {
@@ -155,7 +157,7 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
           }
         `}
       </style>
-      <h2 className="text-3xl font-bold text-indigo-900 dark:text-indigo-300">Ricordi</h2>
+      <h2 className="text-3xl font-bold text-indigo-900 dark:text-indigo-300">{t(language, "Memories")}</h2>
       
       {/* Milestones Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -164,7 +166,7 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
             <div className="text-2xl mb-1">{m.icon}</div>
             <h3 className="font-bold text-indigo-900 dark:text-indigo-200 text-sm">{m.label}</h3>
             <div className="text-2xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
-              {m.daysLeft} <span className="text-xs font-sans font-normal text-slate-400">giorni</span>
+              {m.daysLeft} <span className="text-xs font-sans font-normal text-slate-400">{t(language, "days")}</span>
             </div>
           </div>
         ))}
@@ -188,7 +190,7 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
         </div>
         
         <div className="grid grid-cols-7 gap-3 text-center mb-2">
-          {['Do','Lu','Ma','Me','Gi','Ve','Sa'].map(d => <span key={d} className="text-xs font-bold text-slate-400">{d}</span>)}
+          {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => <span key={d} className="text-xs font-bold text-slate-400">{d}</span>)}
         </div>
         <div className="grid grid-cols-7 gap-3">
           {renderCalendar()}
@@ -212,8 +214,8 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
                   {!specialEvent && (
                     <p className="text-indigo-200 text-sm font-mono">
                       {selectedDayLogs.length > 0 
-                        ? `${selectedDayLogs.length} ricordi salvati` 
-                        : 'Nessun ricordo.'}
+                        ? `${selectedDayLogs.length} ${t(language, "memories recorded")}` 
+                        : t(language, 'No memories recorded')}
                     </p>
                   )}
                </div>
@@ -233,12 +235,12 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
 
                {selectedDayLogs.length === 0 && !showAddForm ? (
                  <div className="text-center py-8 text-slate-400">
-                    <p className="mb-4">Nulla di registrato in questo giorno.</p>
+                    <p className="mb-4">{t(language, "Nothing logged on this day")}</p>
                     <button 
                         onClick={() => setShowAddForm(true)}
                         className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center gap-2 mx-auto"
                     >
-                        <Plus className="w-5 h-5" /> Aggiungi Ricordo
+                        <Plus className="w-5 h-5" /> {t(language, "Add Memory")}
                     </button>
                  </div>
                ) : (
@@ -270,7 +272,7 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
                             onClick={() => setShowAddForm(true)}
                             className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-400 rounded-xl hover:border-indigo-400 hover:text-indigo-500 transition-colors flex items-center justify-center gap-2 font-bold"
                         >
-                            <Plus className="w-5 h-5" /> Aggiungi Ricordo
+                            <Plus className="w-5 h-5" /> {t(language, "Add Memory")}
                         </button>
                     )}
                  </>
@@ -278,21 +280,21 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
 
                {showAddForm && (
                    <form onSubmit={handleAddSubmit} className="glass-card p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-900 animate-slide-in">
-                       <h4 className="font-bold text-indigo-900 dark:text-indigo-200 mb-3">Aggiungi Ricordo</h4>
+                       <h4 className="font-bold text-indigo-900 dark:text-indigo-200 mb-3">{t(language, "Add Memory")}</h4>
                        <div className="space-y-3">
                            <div>
-                               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Cosa è successo?</label>
+                               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">{t(language, "What happened?")}</label>
                                <input 
                                    className="w-full p-2 rounded-lg bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                                    value={newLog.title}
                                    onChange={e => setNewLog({...newLog, title: e.target.value})}
-                                   placeholder="Titolo"
+                                   placeholder={t(language, "Title")}
                                    required
                                />
                            </div>
                            <div className="grid grid-cols-2 gap-3">
                                <div>
-                                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tipo</label>
+                                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">{t(language, "Type")}</label>
                                    <select 
                                        className="w-full p-2 rounded-lg bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-800 dark:text-white"
                                        value={newLog.type}
@@ -302,7 +304,7 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
                                    </select>
                                </div>
                                <div>
-                                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Voto</label>
+                                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">{t(language, "Rating")}</label>
                                    <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-2 rounded-lg border border-indigo-100 dark:border-indigo-800">
                                        <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                                        <input 
@@ -315,7 +317,7 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
                                </div>
                            </div>
                            <div>
-                               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Note</label>
+                               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">{t(language, "Notes")}</label>
                                <textarea 
                                    className="w-full p-2 rounded-lg bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-300 h-20 resize-none"
                                    value={newLog.notes}
@@ -328,13 +330,13 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog }) => {
                                    onClick={() => setShowAddForm(false)}
                                    className="flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
                                >
-                                   Annulla
+                                   {t(language, "Cancel")}
                                </button>
                                <button 
                                    type="submit" 
                                    className="flex-1 py-2 bg-indigo-500 text-white font-bold rounded-lg hover:bg-indigo-600 shadow-md"
                                >
-                                   Salva Ricordo
+                                   {t(language, "Save Memory")}
                                </button>
                            </div>
                        </div>

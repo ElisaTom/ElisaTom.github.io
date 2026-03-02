@@ -1,42 +1,31 @@
 import React, { useState } from 'react';
-import { TabId } from '../types';
+import { TabId, Language } from '../types';
 import { 
   Home, Clock, Compass, Map, Film, Utensils, Gift, Heart, Menu, X, Settings, BarChart2 
 } from 'lucide-react';
+import { t } from '../i18n';
 
 interface NavProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   colorClass: string;
+  language: Language;
 }
 
-const LABELS: Record<TabId, string> = {
-  home: 'Home',
-  memories: 'Ricordi',
-  discovery: 'Scoperta',
-  activities: 'Attività',
-  media: 'Media',
-  food: 'Cibo & Drink',
-  wishlist: 'Desideri',
-  lovenotes: 'Note d\'Amore',
-  insights: 'Analisi',
-  settings: 'Impostazioni'
-};
-
-const NAV_ITEMS: { id: TabId; icon: React.ElementType }[] = [
-  { id: 'home', icon: Home },
-  { id: 'memories', icon: Clock },
-  { id: 'discovery', icon: Compass },
-  { id: 'activities', icon: Map },
-  { id: 'media', icon: Film },
-  { id: 'food', icon: Utensils },
-  { id: 'wishlist', icon: Gift },
-  { id: 'lovenotes', icon: Heart },
-  { id: 'insights', icon: BarChart2 },
-  { id: 'settings', icon: Settings },
+const NAVIGATION_ITEMS: { id: TabId; icon: React.ElementType; labelKey: string }[] = [
+  { id: 'home', icon: Home, labelKey: 'Home' },
+  { id: 'memories', icon: Clock, labelKey: 'Memories' },
+  { id: 'discovery', icon: Compass, labelKey: 'Discovery' },
+  { id: 'activities', icon: Map, labelKey: 'Activities' },
+  { id: 'media', icon: Film, labelKey: 'Media' },
+  { id: 'food', icon: Utensils, labelKey: 'Food & Drink' },
+  { id: 'wishlist', icon: Gift, labelKey: 'Wishlist' },
+  { id: 'lovenotes', icon: Heart, labelKey: 'Love Notes' },
+  { id: 'insights', icon: BarChart2, labelKey: 'Insights' },
+  { id: 'settings', icon: Settings, labelKey: 'Settings' },
 ];
 
-export const Navigation: React.FC<NavProps> = ({ activeTab, onTabChange, colorClass }) => {
+export const Navigation: React.FC<NavProps> = ({ activeTab, onTabChange, colorClass, language }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const handleNav = (id: TabId) => {
@@ -48,9 +37,8 @@ export const Navigation: React.FC<NavProps> = ({ activeTab, onTabChange, colorCl
     <div className="flex flex-col gap-2 p-4">
       <div className="mb-8 px-4 py-2">
         <h1 className="text-2xl font-bold font-['Outfit'] tracking-tight text-slate-800 dark:text-white">Eli & Nic</h1>
-        <p className="text-xs text-slate-400 font-mono">OS v1.1</p>
       </div>
-      {NAV_ITEMS.map((item) => {
+      {NAVIGATION_ITEMS.map((item) => {
         const isActive = activeTab === item.id;
         return (
           <button
@@ -62,7 +50,7 @@ export const Navigation: React.FC<NavProps> = ({ activeTab, onTabChange, colorCl
                 : 'hover:bg-white/40 dark:hover:bg-slate-800/50 text-slate-500 dark:text-slate-400'}`}
           >
             <item.icon className={`w-5 h-5 ${isActive ? colorClass : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
-            <span>{LABELS[item.id]}</span>
+            <span>{t(language, item.labelKey)}</span>
           </button>
         );
       })}

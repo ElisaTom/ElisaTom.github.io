@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Movie } from '../types';
+import { Movie, Language } from '../types';
 import { Play, Plus, Trash2, CheckCircle, Tv, Film, Star, Bookmark } from 'lucide-react';
+import { t } from '../i18n';
 
 interface Props {
   movies: Movie[];
   onAdd: (movie: Movie) => void;
   onUpdate: (id: string, data: Partial<Movie>) => void;
   onDelete: (id: string) => void;
+  language: Language;
 }
 
-export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete }) => {
+export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, language }) => {
   const [activeTab, setActiveTab] = useState<'wishlist' | 'active' | 'watched'>('active');
   const [showForm, setShowForm] = useState(false);
   const [rateItem, setRateItem] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-rose-900 dark:text-rose-300">Media</h2>
+        <h2 className="text-3xl font-bold text-rose-900 dark:text-rose-300">{t(language, "Media")}</h2>
         <button 
           onClick={() => setShowForm(!showForm)}
           className="p-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full shadow-lg shadow-rose-200 dark:shadow-none transition-all"
@@ -68,7 +70,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
             activeTab === 'wishlist' ? 'bg-white dark:bg-slate-600 text-rose-600 dark:text-rose-300 shadow-sm' : 'text-slate-400 hover:text-rose-400'
           }`}
         >
-          <Bookmark className="w-4 h-4" /> Da Vedere
+          <Bookmark className="w-4 h-4" /> {t(language, "To Watch")}
         </button>
         <button
           onClick={() => setActiveTab('active')}
@@ -76,7 +78,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
             activeTab === 'active' ? 'bg-white dark:bg-slate-600 text-rose-600 dark:text-rose-300 shadow-sm' : 'text-slate-400 hover:text-rose-400'
           }`}
         >
-          <Play className="w-4 h-4" /> In Corso
+          <Play className="w-4 h-4" /> {t(language, "Watching Now")}
         </button>
         <button
           onClick={() => setActiveTab('watched')}
@@ -84,7 +86,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
             activeTab === 'watched' ? 'bg-white dark:bg-slate-600 text-rose-600 dark:text-rose-300 shadow-sm' : 'text-slate-400 hover:text-rose-400'
           }`}
         >
-          <CheckCircle className="w-4 h-4" /> Libreria
+          <CheckCircle className="w-4 h-4" /> {t(language, "Library")}
         </button>
       </div>
 
@@ -92,7 +94,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
         <form onSubmit={handleSubmit} className="glass-card p-6 rounded-3xl space-y-4 animate-slide-in dark:bg-slate-800">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Titolo</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Title")}</label>
                 <input 
                   className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-rose-100 dark:border-rose-900 rounded-xl dark:text-white"
                   value={newItem.title} onChange={e => setNewItem({...newItem, title: e.target.value})}
@@ -100,7 +102,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
                 />
              </div>
              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Piattaforma</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Platform")}</label>
                 <select 
                   className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-rose-100 dark:border-rose-900 rounded-xl dark:text-white"
                   value={newItem.platform} onChange={e => setNewItem({...newItem, platform: e.target.value as any})}
@@ -114,16 +116,16 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
              <div className="flex gap-4 items-center">
                <label className="flex items-center gap-2 cursor-pointer">
                  <input type="radio" checked={newItem.type === 'series'} onChange={() => setNewItem({...newItem, type: 'series'})} className="accent-rose-500" />
-                 <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Serie</span>
+                 <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{t(language, "Series")}</span>
                </label>
                <label className="flex items-center gap-2 cursor-pointer">
                  <input type="radio" checked={newItem.type === 'movie'} onChange={() => setNewItem({...newItem, type: 'movie'})} className="accent-rose-500" />
-                 <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Film</span>
+                 <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{t(language, "Movie")}</span>
                </label>
              </div>
              <input 
                 className="flex-1 p-3 bg-white/50 dark:bg-slate-700/50 border border-rose-100 dark:border-rose-900 rounded-xl dark:text-white"
-                placeholder="Genere (es. Sci-Fi)"
+                placeholder={t(language, "Genre (e.g. Sci-Fi)")}
                 value={newItem.genre} onChange={e => setNewItem({...newItem, genre: e.target.value})}
              />
           </div>
@@ -131,19 +133,19 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
           <div className="flex gap-4 border-t border-rose-100 dark:border-rose-900 pt-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="radio" checked={newItem.status === 'wishlist'} onChange={() => setNewItem({...newItem, status: 'wishlist'})} className="accent-rose-500 w-5 h-5" />
-              <span className="font-bold text-slate-700 dark:text-slate-300">Da Vedere</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">{t(language, "To Watch")}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="radio" checked={newItem.status === 'active'} onChange={() => setNewItem({...newItem, status: 'active'})} className="accent-rose-500 w-5 h-5" />
-              <span className="font-bold text-slate-700 dark:text-slate-300">Guardando Ora</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">{t(language, "Watching Now")}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="radio" checked={newItem.status === 'watched'} onChange={() => setNewItem({...newItem, status: 'watched'})} className="accent-rose-500 w-5 h-5" />
-              <span className="font-bold text-slate-700 dark:text-slate-300">Visto</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">{t(language, "Watched")}</span>
             </label>
           </div>
 
-          <button type="submit" className="w-full py-3 bg-rose-500 text-white font-bold rounded-xl shadow-md">Aggiungi</button>
+          <button type="submit" className="w-full py-3 bg-rose-500 text-white font-bold rounded-xl shadow-md">{t(language, "Add")}</button>
         </form>
       )}
 
@@ -170,7 +172,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
                   onClick={() => startWatching(movie.id)}
                   className="w-full mt-2 py-1.5 bg-rose-100 text-rose-600 text-xs font-bold rounded-lg hover:bg-rose-200"
                 >
-                  Inizia a Guardare
+                  {t(language, "Start Watching")}
                 </button>
               </div>
             );
@@ -248,7 +250,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
         {filteredMovies.length === 0 && (
            <div className="text-center py-12 text-slate-400">
              <Film className="w-12 h-12 mx-auto mb-2 opacity-20" />
-             <p>Nessun titolo in {activeTab === 'wishlist' ? 'Da Vedere' : activeTab === 'active' ? 'In Corso' : 'Libreria'}.</p>
+             <p>{t(language, "No titles in")} {activeTab === 'wishlist' ? t(language, 'To Watch') : activeTab === 'active' ? t(language, 'Watching Now') : t(language, 'Library')}.</p>
            </div>
         )}
       </div>
@@ -258,7 +260,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setRateItem(null)} />
             <div className="relative bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl w-full max-w-sm text-center">
-               <h4 className="font-bold text-slate-700 dark:text-white mb-4 text-xl">Vota questo Titolo</h4>
+               <h4 className="font-bold text-slate-700 dark:text-white mb-4 text-xl">{t(language, "Rate this Title")}</h4>
                <div className="flex justify-center gap-2 mb-6">
                   {[1,2,3,4,5].map(star => (
                     <button key={star} onClick={() => setRatingData({...ratingData, rating: star})}>
@@ -268,12 +270,12 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete })
                </div>
                <textarea 
                  className="w-full p-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:border-rose-400 outline-none mb-6 h-24 resize-none dark:text-white"
-                 placeholder="Cosa ne pensi?"
+                 placeholder={t(language, "What do you think?")}
                  value={ratingData.review} onChange={e => setRatingData({...ratingData, review: e.target.value})}
                />
                <div className="flex gap-4">
-                 <button onClick={() => setRateItem(null)} className="flex-1 py-3 text-slate-400 hover:text-slate-600 font-bold">Annulla</button>
-                 <button onClick={() => submitRating(rateItem)} className="flex-1 py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600">Salva in Libreria</button>
+                 <button onClick={() => setRateItem(null)} className="flex-1 py-3 text-slate-400 hover:text-slate-600 font-bold">{t(language, "Cancel")}</button>
+                 <button onClick={() => submitRating(rateItem)} className="flex-1 py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600">{t(language, "Save to Library")}</button>
                </div>
             </div>
          </div>

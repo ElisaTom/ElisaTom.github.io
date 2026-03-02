@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { RegistryItem } from '../types';
+import { RegistryItem, Language } from '../types';
 import { Check, Trash2, Plus, ShoppingBag } from 'lucide-react';
+import { t } from '../i18n';
 
 interface Props {
   items: RegistryItem[];
   onAdd: (item: RegistryItem) => void;
   onUpdate: (id: string, data: Partial<RegistryItem>) => void;
   onDelete: (id: string) => void;
+  language: Language;
 }
 
-export const TabWishlist: React.FC<Props> = ({ items, onAdd, onUpdate, onDelete }) => {
+export const TabWishlist: React.FC<Props> = ({ items, onAdd, onUpdate, onDelete, language }) => {
   const [showForm, setShowForm] = useState(false);
   const [newItem, setNewItem] = useState<Partial<RegistryItem>>({
     text: '', type: 'General', beneficiary: 'Us', status: 'pending'
@@ -29,7 +31,7 @@ export const TabWishlist: React.FC<Props> = ({ items, onAdd, onUpdate, onDelete 
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-teal-900 dark:text-teal-300">Desideri</h2>
+        <h2 className="text-3xl font-bold text-teal-900 dark:text-teal-300">{t(language, "Registry")}</h2>
         <button 
           onClick={() => setShowForm(!showForm)}
           className="p-3 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg shadow-teal-200 dark:shadow-none transition-all"
@@ -41,18 +43,18 @@ export const TabWishlist: React.FC<Props> = ({ items, onAdd, onUpdate, onDelete 
       {showForm && (
         <form onSubmit={handleSubmit} className="glass-card p-6 rounded-3xl space-y-4 animate-slide-in dark:bg-slate-800">
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Desidero...</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "I wish for...")}</label>
             <input 
               className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-teal-100 dark:border-teal-900 rounded-xl dark:text-white"
               value={newItem.text}
               onChange={e => setNewItem({...newItem, text: e.target.value})}
-              placeholder="es. Dyson Airwrap"
+              placeholder={t(language, "e.g. Dyson Airwrap")}
               required
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div>
-               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Categoria</label>
+               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Category")}</label>
                <select 
                  className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-teal-100 dark:border-teal-900 rounded-xl dark:text-white"
                  value={newItem.type}
@@ -64,19 +66,19 @@ export const TabWishlist: React.FC<Props> = ({ items, onAdd, onUpdate, onDelete 
                </select>
              </div>
              <div>
-               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Per</label>
+               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "For")}</label>
                <select 
                  className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-teal-100 dark:border-teal-900 rounded-xl dark:text-white"
                  value={newItem.beneficiary}
                  onChange={e => setNewItem({...newItem, beneficiary: e.target.value as any})}
                >
-                 <option value="Us">Noi</option>
-                 <option value="Him">Lui</option>
-                 <option value="Her">Lei</option>
+                 <option value="Us">{t(language, "Us")}</option>
+                 <option value="Him">{t(language, "Him")}</option>
+                 <option value="Her">{t(language, "Her")}</option>
                </select>
              </div>
           </div>
-          <button type="submit" className="w-full py-3 bg-teal-600 text-white font-bold rounded-xl shadow-md">Aggiungi al Registro</button>
+          <button type="submit" className="w-full py-3 bg-teal-600 text-white font-bold rounded-xl shadow-md">{t(language, "Add to Registry")}</button>
         </form>
       )}
 
@@ -104,7 +106,7 @@ export const TabWishlist: React.FC<Props> = ({ items, onAdd, onUpdate, onDelete 
               <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full 
                 ${item.beneficiary === 'Him' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300' : 
                   item.beneficiary === 'Her' ? 'bg-pink-100 text-pink-600 dark:bg-pink-900 dark:text-pink-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
-                Per {item.beneficiary === 'Him' ? 'Lui' : item.beneficiary === 'Her' ? 'Lei' : 'Noi'}
+                {t(language, "For")} {item.beneficiary === 'Him' ? t(language, 'Him') : item.beneficiary === 'Her' ? t(language, 'Her') : t(language, 'Us')}
               </span>
             </div>
             
@@ -119,7 +121,7 @@ export const TabWishlist: React.FC<Props> = ({ items, onAdd, onUpdate, onDelete 
       {/* Granted Archive */}
       {grantedItems.length > 0 && (
         <div className="pt-8 border-t border-teal-100/50 dark:border-teal-900/50">
-           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Archivio Esauditi</h3>
+           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">{t(language, "Granted Archive")}</h3>
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
              {grantedItems.map(item => (
                 <div key={item.id} className="p-4 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl flex justify-between items-center opacity-75">

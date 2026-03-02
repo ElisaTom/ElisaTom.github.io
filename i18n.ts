@@ -2,8 +2,7 @@
 import { Language } from './types';
 
 export const t = (lang: Language, key: string): string => {
-  const dict = translations[lang] || translations.en;
-  return dict[key] || key;
+  return translations.en[key] || key;
 };
 
 const translations: Record<Language, Record<string, string>> = {
@@ -11,13 +10,13 @@ const translations: Record<Language, Record<string, string>> = {
     // Home
     "Welcome back": "Welcome back",
     "Days of shared history": "Days of shared history",
-    "Keep the fire burning": "Keep the fire burning",
-    "Couple Streak": "Couple Streak",
+    "Keep the fire burning": "",
+    "Couple Streak": "Streak",
     "Calendar": "Calendar",
     "View timeline": "View timeline",
     "Love Tank": "Love Tank",
     "Boost partner": "Boost partner",
-    "Oracle Suggestion": "Oracle Suggestion",
+    "Oracle Suggestion": "Suggestion",
     "Suggestion": "Suggestion",
     "Indecisive?": "Indecisive? Let the system decide.",
     
@@ -31,6 +30,8 @@ const translations: Record<Language, Record<string, string>> = {
     "Save Memory": "Save Memory",
     "What happened?": "What happened?",
     "Notes": "Notes",
+    "Rating": "Rating",
+    "Type": "Type",
     "Happy Birthday Nic": "Happy Birthday Nic!",
     "Happy Birthday Eli": "Happy Birthday Eli!",
     "Happy Anniversary": "Happy Anniversary!",
@@ -41,7 +42,7 @@ const translations: Record<Language, Record<string, string>> = {
     "Let the system choose": "Let the system choose.",
     "Activity": "Activity",
     "Food": "Food",
-    "Media": "Media",
+    "Media": "Movies",
     "Blind Fate": "Blind Fate",
     "Random pick": "Random pick",
     "Smart Match": "Smart Match",
@@ -55,7 +56,6 @@ const translations: Record<Language, Record<string, string>> = {
     "Area": "Area",
     "Max Budget": "Max Budget",
     "Include re-watch?": "Include re-watch?",
-    "Type": "Type",
     "Platform": "Platform",
     "Genre / Mood": "Genre / Mood",
     "Consulting the Spirits...": "Consulting the Spirits...",
@@ -70,7 +70,7 @@ const translations: Record<Language, Record<string, string>> = {
     "Category": "Category",
     "Energy (1-5)": "Energy (1-5)",
     "Budget ($)": "Budget ($)",
-    "Add Blueprint": "Add Blueprint",
+    "Add Blueprint": "Add Activity",
     
     // Food
     "Food & Drink": "Food & Drink",
@@ -80,8 +80,8 @@ const translations: Record<Language, Record<string, string>> = {
     "Visited": "Visited",
     "Review": "Review",
     "Save Spot": "Save Spot",
-    "Visited Journal": "Visited Journal",
-    "To Devour": "To Devour",
+    "Visited Journal": "Tried",
+    "To Devour": "To Try",
     "No visited spots yet": "No visited spots yet.",
     
     // Media
@@ -92,7 +92,10 @@ const translations: Record<Language, Record<string, string>> = {
     "Series": "Series",
     "Movie": "Movie",
     "Watching Now": "Watching Now",
-    "Seen": "Seen",
+    "Watched": "Watched",
+    "To Watch": "To Watch",
+    "Add": "Add",
+    "Genre (e.g. Sci-Fi)": "Genre (e.g. Sci-Fi)",
     "Add to Library": "Add to Library",
     "Start Watching": "Start Watching",
     "Rate this Title": "Rate this Title",
@@ -100,10 +103,16 @@ const translations: Record<Language, Record<string, string>> = {
     "No titles in": "No titles in",
     "Cancel": "Cancel",
     "Save to Library": "Save to Library",
+    "What do you think?": "What do you think?",
 
     // Wishlist
+    "Registry": "Registry",
     "I wish for...": "I wish for...",
+    "e.g. Dyson Airwrap": "e.g. Dyson Airwrap",
     "For": "For",
+    "Us": "Us",
+    "Him": "Him",
+    "Her": "Her",
     "Add to Registry": "Add to Registry",
     "Granted Archive": "Granted Archive",
     "Mark Granted": "Mark Granted",
@@ -113,6 +122,8 @@ const translations: Record<Language, Record<string, string>> = {
     "Send love to fill the tank": "Send love to fill the tank.",
     "Boost Him": "Boost Him",
     "Boost Her": "Boost Her",
+    "No notes for": "No notes for",
+    "yet! Add some.": "yet! Add some.",
     "Write a Note": "Write a Note",
     "Write something sweet...": "Write something sweet...",
     "For Him": "For Him",
@@ -125,7 +136,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Settings
     "System Settings": "System Settings",
-    "Configure your Couple OS": "Configure your Couple OS.",
+    "Configure your Couple OS": "",
     "Appearance": "Appearance",
     "Language": "Language",
     "Interface language": "Interface language",
@@ -142,6 +153,8 @@ const translations: Record<Language, Record<string, string>> = {
     "Import Complete!": "Import Complete!",
     "Invalid JSON file": "Invalid JSON file",
     "This will merge imported data into your current database. Continue?": "This will merge imported data into your current database. Continue?",
+    "Reset Database Connection": "Reset Database Connection",
+    "Are you sure? This will disconnect the database and require reconfiguration.": "Are you sure? This will disconnect the database and require reconfiguration.",
     
     // Insights
     "Insights": "Insights",
@@ -159,158 +172,5 @@ const translations: Record<Language, Record<string, string>> = {
     "watched": "watched",
     "Binged": "Binged",
     "Same": "Same"
-  },
-  it: {
-    // Home
-    "Welcome back": "Bentornati",
-    "Days of shared history": "Giorni di storia condivisa",
-    "Keep the fire burning": "Mantenete viva la fiamma",
-    "Couple Streak": "Couple Streak",
-    "Calendar": "Calendario",
-    "View timeline": "Vedi timeline",
-    "Love Tank": "Serbatoio Amore",
-    "Boost partner": "Ricarica partner",
-    "Oracle Suggestion": "Consiglio Oracolo",
-    "Suggestion": "Consiglio",
-    "Indecisive?": "Indecisi? Lasciate fare al sistema.",
-
-    // Memories
-    "Memories": "Ricordi",
-    "days": "giorni",
-    "memories recorded": "ricordi salvati",
-    "No memories recorded": "Nessun ricordo.",
-    "Nothing logged on this day": "Nulla di registrato in questo giorno.",
-    "Add Memory": "Aggiungi Ricordo",
-    "Save Memory": "Salva Ricordo",
-    "What happened?": "Cosa è successo?",
-    "Notes": "Note",
-    "Happy Birthday Nic": "Buon Compleanno Nicolò!",
-    "Happy Birthday Eli": "Buon Compleanno Elisa!",
-    "Happy Anniversary": "Buon Anniversario!",
-    "Happy Valentine": "Buon San Valentino!",
-
-    // Discovery
-    "Discovery": "Scoperta",
-    "Let the system choose": "Lascia scegliere al sistema.",
-    "Activity": "Attività",
-    "Food": "Cibo",
-    "Media": "Media",
-    "Blind Fate": "Fato Cieco",
-    "Random pick": "Scelta casuale",
-    "Smart Match": "Match Intelligente",
-    "AI Analysis": "Analisi IA",
-    "Calibrate Selection": "Calibra Selezione",
-    "Energy": "Energia",
-    "Budget": "Budget",
-    "Location": "Posizione",
-    "Include visited spots?": "Includi posti visitati?",
-    "Cuisine": "Cucina",
-    "Area": "Zona",
-    "Max Budget": "Budget Max",
-    "Include re-watch?": "Includi re-watch?",
-    "Type": "Tipo",
-    "Platform": "Piattaforma",
-    "Genre / Mood": "Genere / Mood",
-    "Consulting the Spirits...": "Consultando gli Spiriti...",
-    "Make the Choice": "Fai la Scelta",
-    "The Wheel of Fate Chose": "La Ruota del Fato ha scelto",
-    "The Oracle Recommends": "L'Oracolo Raccomanda",
-    "Match": "Affinità",
-
-    // Activities
-    "Activities": "Attività",
-    "Activity Name": "Nome Attività",
-    "Category": "Categoria",
-    "Energy (1-5)": "Energia (1-5)",
-    "Budget ($)": "Budget ($)",
-    "Add Blueprint": "Aggiungi Idea",
-
-    // Food
-    "Food & Drink": "Cibo & Drink",
-    "Restaurant Name": "Nome Ristorante",
-    "Cuisine Type": "Tipo Cucina",
-    "Wishlist": "Desideri",
-    "Visited": "Visitati",
-    "Review": "Recensione",
-    "Save Spot": "Salva Posto",
-    "Visited Journal": "Diario Visite",
-    "To Devour": "Da Provare",
-    "No visited spots yet": "Nessun posto visitato ancora.",
-
-    // Media
-    "Watchlist": "Da Vedere",
-    "Watching": "In Corso",
-    "Library": "Libreria",
-    "Title": "Titolo",
-    "Series": "Serie",
-    "Movie": "Film",
-    "Watching Now": "Guardando Ora",
-    "Seen": "Visto",
-    "Add to Library": "Aggiungi",
-    "Start Watching": "Inizia a Guardare",
-    "Rate this Title": "Vota questo Titolo",
-    "Mark as Finished": "Segna come Finito",
-    "No titles in": "Nessun titolo in",
-    "Cancel": "Annulla",
-    "Save to Library": "Salva in Libreria",
-
-    // Wishlist
-    "I wish for...": "Desidero...",
-    "For": "Per",
-    "Add to Registry": "Aggiungi al Registro",
-    "Granted Archive": "Archivio Esauditi",
-    "Mark Granted": "Segna Esaudito",
-
-    // Love Notes
-    "Love Notes": "Note d'Amore",
-    "Send love to fill the tank": "Invia amore per riempire il serbatoio.",
-    "Boost Him": "Boost Lui",
-    "Boost Her": "Boost Lei",
-    "Write a Note": "Scrivi una Nota",
-    "Write something sweet...": "Scrivi qualcosa di dolce...",
-    "For Him": "Per Lui",
-    "For Her": "Per Lei",
-    "The Vault": "Il Caveau",
-    "Open": "Apri",
-    "Close": "Chiudi",
-    "The vault is empty": "Il caveau è vuoto.",
-    "Sent on": "Inviato il",
-
-    // Settings
-    "System Settings": "Impostazioni Sistema",
-    "Configure your Couple OS": "Configura il tuo Couple OS.",
-    "Appearance": "Aspetto",
-    "Language": "Lingua",
-    "Interface language": "Lingua interfaccia",
-    "Theme": "Tema",
-    "Theme Color": "Colore Tema",
-    "Accent Color": "Colore Accento",
-    "Minimal Light": "Chiaro Minimal",
-    "Minimal Dark": "Scuro Minimal",
-    "Data Management": "Gestione Dati",
-    "Backup Data": "Backup Dati",
-    "Download JSON file": "Scarica file JSON",
-    "Restore Data": "Ripristina Dati",
-    "Import JSON file": "Importa file JSON",
-    "Import Complete!": "Importazione Completata!",
-    "Invalid JSON file": "File JSON non valido",
-    "This will merge imported data into your current database. Continue?": "Questo unirà i dati importati nel database attuale. Continuare?",
-
-    // Insights
-    "Insights": "Analisi",
-    "Historical overview of your activities": "Panoramica storica delle attività.",
-    "Total Interactions": "Interazioni Totali",
-    "Last Month": "Mese Scorso",
-    "Adventures": "Avventure",
-    "events": "eventi",
-    "Obsession": "Ossessione",
-    "Dining": "Ristoranti",
-    "visits": "visite",
-    "Favorite": "Preferito",
-    "Try something new!": "Prova qualcosa di nuovo!",
-    "Cinema/TV": "Cinema/TV",
-    "watched": "visti",
-    "Binged": "Maratona",
-    "Same": "Uguale"
   }
 };

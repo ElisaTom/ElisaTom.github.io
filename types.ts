@@ -3,7 +3,7 @@ export type TabId = 'home' | 'memories' | 'discovery' | 'activities' | 'media' |
 
 export type ThemeMode = 'light' | 'dark';
 export type ThemeColor = 'prism' | 'blue' | 'rose' | 'violet' | 'emerald' | 'amber';
-export type Language = 'en' | 'it';
+export type Language = 'en';
 
 export interface BaseItem {
   id: string;

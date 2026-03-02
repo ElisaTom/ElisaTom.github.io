@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Activity } from '../types';
+import { Activity, Language } from '../types';
 import { Plus, Trash2, MapPin, DollarSign, Zap, Loader } from 'lucide-react';
 import { getPlaceFromMaps } from '../services/geminiService';
+import { t } from '../i18n';
 
 interface Props {
   activities: Activity[];
   onAdd: (a: Activity) => void;
   onDelete: (id: string) => void;
+  language: Language;
 }
 
-export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) => {
+export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete, language }) => {
   const [showForm, setShowForm] = useState(false);
   const [newActivity, setNewActivity] = useState<Partial<Activity>>({
     name: '', category: 'Nature', budget: 1, energy: 3, location: ''
@@ -52,7 +54,7 @@ export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-emerald-900 dark:text-emerald-300">Attività</h2>
+        <h2 className="text-3xl font-bold text-emerald-900 dark:text-emerald-300">{t(language, "Activities")}</h2>
         <button 
           onClick={() => setShowForm(!showForm)}
           className="p-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg shadow-emerald-200 dark:shadow-none transition-all"
@@ -64,7 +66,7 @@ export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) 
       {showForm && (
         <form onSubmit={handleSubmit} className="glass-card p-6 rounded-3xl space-y-4 animate-slide-in dark:bg-slate-800">
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nome Attività</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Activity Name")}</label>
             <input 
               className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-emerald-100 dark:border-emerald-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:text-white"
               value={newActivity.name}
@@ -74,7 +76,7 @@ export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Categoria</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Category")}</label>
               <select 
                 className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-emerald-100 dark:border-emerald-900 rounded-xl dark:text-white"
                 value={newActivity.category}
@@ -86,13 +88,13 @@ export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) 
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Luogo</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Location")}</label>
               <div className="flex gap-2">
                   <input 
                     className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-emerald-100 dark:border-emerald-900 rounded-xl dark:text-white"
                     value={newActivity.location}
                     onChange={e => setNewActivity({...newActivity, location: e.target.value})}
-                    placeholder="Nome posto o indirizzo"
+                    placeholder="Place name or address"
                   />
                   {newActivity.location && (
                       <button 
@@ -111,7 +113,7 @@ export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) 
           {/* Grounding Result Display */}
           {groundingResult && (
              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl text-sm">
-                <div className="font-bold text-emerald-800 dark:text-emerald-300 text-xs mb-1 uppercase tracking-wider">Gemini ha trovato:</div>
+                <div className="font-bold text-emerald-800 dark:text-emerald-300 text-xs mb-1 uppercase tracking-wider">Gemini found:</div>
                 <p className="text-slate-700 dark:text-slate-300 mb-2">{groundingResult.text}</p>
                 <div className="flex flex-wrap gap-2">
                   {groundingResult.chunks.map((chunk, i) => {
@@ -121,7 +123,7 @@ export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) 
                                 key={i} href={chunk.maps.uri} target="_blank" rel="noreferrer" 
                                 className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-700 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-transform"
                             >
-                                <MapPin className="w-3 h-3" /> {chunk.maps.title || 'Vedi su Maps'}
+                                <MapPin className="w-3 h-3" /> {chunk.maps.title || 'See on Maps'}
                             </a>
                         );
                     }
@@ -133,15 +135,15 @@ export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) 
 
            <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Budget ($)</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Budget ($)")}</label>
               <input type="range" min="1" max="3" value={newActivity.budget} onChange={e => setNewActivity({...newActivity, budget: parseInt(e.target.value) as any})} className="w-full accent-emerald-500"/>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Energia (1-5)</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t(language, "Energy (1-5)")}</label>
               <input type="range" min="1" max="5" value={newActivity.energy} onChange={e => setNewActivity({...newActivity, energy: parseInt(e.target.value) as any})} className="w-full accent-emerald-500"/>
             </div>
            </div>
-          <button type="submit" className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl">Aggiungi Idea</button>
+          <button type="submit" className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl">{t(language, "Add Blueprint")}</button>
         </form>
       )}
 
@@ -169,7 +171,7 @@ export const TabActivities: React.FC<Props> = ({ activities, onAdd, onDelete }) 
             )}
             
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-               <div className="flex items-center gap-1 text-emerald-500" title="Livello Energia">
+               <div className="flex items-center gap-1 text-emerald-500" title="Energy Level">
                  <Zap className="w-4 h-4" />
                  <div className="flex gap-[2px]">
                    {[...Array(5)].map((_, i) => (
