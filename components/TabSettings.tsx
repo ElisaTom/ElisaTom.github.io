@@ -1,10 +1,9 @@
 import React from 'react';
 import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor, Language } from '../types';
 import { format } from 'date-fns';
-import { Download, Upload, Database, Moon, Sun, Palette, Check, RefreshCw, Languages, Cloud, CloudOff } from 'lucide-react';
+import { Download, Upload, Database, Moon, Sun, Palette, Check, RefreshCw, Languages } from 'lucide-react';
 import { DataService } from '../services/dataService';
 import { resetFirebaseConfig } from '../services/firebase';
-import { GoogleDriveService } from '../services/googleDriveService';
 import { t } from '../i18n';
 
 interface Props {
@@ -66,33 +65,6 @@ export const TabSettings: React.FC<Props> = ({
     };
     reader.readAsText(file);
   };
-
-  const handleGoogleLogin = async () => {
-    try {
-      const response = await fetch('/api/auth/google/url');
-      const { url } = await response.json();
-      const authWindow = window.open(url, 'google_auth', 'width=600,height=700');
-      
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-          GoogleDriveService.setTokens(event.data.tokens);
-          window.location.reload(); // Reload to trigger sync
-        }
-      };
-      window.addEventListener('message', handleMessage);
-    } catch (error) {
-      console.error('Google Login Error:', error);
-    }
-  };
-
-  const handleGoogleLogout = () => {
-    if (confirm("Disconnect Google Drive? Local data will remain.")) {
-      GoogleDriveService.clearTokens();
-      window.location.reload();
-    }
-  };
-
-  const isGoogleConnected = GoogleDriveService.isAuthenticated();
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
@@ -180,24 +152,6 @@ export const TabSettings: React.FC<Props> = ({
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           {/* Google Drive Sync */}
-           <button 
-             onClick={isGoogleConnected ? handleGoogleLogout : handleGoogleLogin}
-             className={`glass-card p-6 rounded-2xl flex flex-col items-center gap-3 transition-colors group text-center md:col-span-2 ${isGoogleConnected ? 'bg-emerald-50/50 dark:bg-emerald-900/20' : 'hover:bg-white/60 dark:bg-slate-800 dark:hover:bg-slate-700'}`}
-           >
-              <div className={`p-3 rounded-full group-hover:scale-110 transition-transform ${isGoogleConnected ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300'}`}>
-                {isGoogleConnected ? <Cloud className="w-6 h-6" /> : <CloudOff className="w-6 h-6" />}
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-700 dark:text-slate-200">
-                  {isGoogleConnected ? 'Google Drive Connected' : 'Connect Google Drive'}
-                </h4>
-                <p className="text-xs text-slate-400">
-                  {isGoogleConnected ? 'Your data is automatically synced to the cloud' : 'Enable cloud sync to keep devices in sync'}
-                </p>
-              </div>
-           </button>
-
            {/* Export */}
            <button 
              onClick={handleExport}

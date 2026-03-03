@@ -15,8 +15,7 @@ import { TabMedia } from './components/TabMedia';
 import { TabSettings } from './components/TabSettings';
 import { TabInsights } from './components/TabInsights';
 import { differenceInDays, parseISO } from 'date-fns';
-import { Heart, Wifi, WifiOff, Users, ArrowRight, Lock, Cloud, CloudOff, RefreshCw } from 'lucide-react';
-import { GoogleDriveService, GoogleTokens } from './services/googleDriveService';
+import { Heart, Wifi, WifiOff, Users, ArrowRight, Lock } from 'lucide-react';
 import { t } from './i18n';
 
 const PRISM_THEME_MAP: Record<TabId, string> = {
@@ -56,26 +55,6 @@ const PASTEL_THEMES: Record<Exclude<ThemeColor, 'prism'>, { text: string, bg: st
 // --- SIMPLIFIED SETUP WIZARD ---
 const SetupWizard = ({ onComplete }: { onComplete: () => void }) => {
   const [roomCode, setRoomCode] = useState('');
-  const [isGoogleSync, setIsGoogleSync] = useState(false);
-
-  const handleGoogleLogin = async () => {
-    try {
-      const response = await fetch('/api/auth/google/url');
-      const { url } = await response.json();
-      const authWindow = window.open(url, 'google_auth', 'width=600,height=700');
-      
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-          GoogleDriveService.setTokens(event.data.tokens);
-          setIsGoogleSync(true);
-          window.removeEventListener('message', handleMessage);
-        }
-      };
-      window.addEventListener('message', handleMessage);
-    } catch (error) {
-      console.error('Google Login Error:', error);
-    }
-  };
 
   const handleStart = () => {
       if(!roomCode) return;
@@ -119,16 +98,6 @@ const SetupWizard = ({ onComplete }: { onComplete: () => void }) => {
                 onChange={e => setRoomCode(e.target.value.toUpperCase().replace(/\s/g,''))}
             />
             
-            <div className="pt-2">
-              <button 
-                onClick={handleGoogleLogin}
-                className={`w-full py-3 rounded-xl border-2 flex items-center justify-center gap-2 font-bold transition-all ${isGoogleSync ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                {isGoogleSync ? <Cloud className="w-5 h-5" /> : <CloudOff className="w-5 h-5" />}
-                {isGoogleSync ? 'Google Drive Linked' : 'Link Google Drive (Cloud Sync)'}
-              </button>
-            </div>
-
             <button 
                 onClick={handleStart}
                 disabled={!roomCode}
@@ -149,26 +118,6 @@ export default function App() {
   const [themeColor, setThemeColor] = useState<ThemeColor>('prism');
   const language: Language = 'en';
   const [peersCount, setPeersCount] = useState(0);
-  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
-  const [isCloudConnected, setIsCloudConnected] = useState(GoogleDriveService.isAuthenticated());
-
-  // Cloud Sync Loop
-  useEffect(() => {
-    if (!isSetup || !isCloudConnected) return;
-
-    const runSync = async () => {
-      setIsCloudSyncing(true);
-      const remoteData = await GoogleDriveService.sync();
-      if (remoteData) {
-        SyncService.merge(remoteData);
-      }
-      setIsCloudSyncing(false);
-    };
-
-    runSync(); // Initial sync
-    const interval = setInterval(runSync, 30000); // Every 30 seconds
-    return () => clearInterval(interval);
-  }, [isSetup, isCloudConnected]);
 
   // Check initial config
   useEffect(() => {
@@ -203,38 +152,12 @@ export default function App() {
   useEffect(() => {
     if(!isSetup) return;
 
-    const runCloudSync = () => {
-      if (isCloudConnected && !isCloudSyncing) {
-        GoogleDriveService.sync().then(remoteData => {
-          if (remoteData) SyncService.merge(remoteData);
-        });
-      }
-    };
-
-    const unsubActivities = DataService.activities.subscribe((data) => {
-      setActivities(data);
-      runCloudSync();
-    });
-    const unsubLogs = DataService.logs.subscribe((data) => {
-      setLogs(data);
-      runCloudSync();
-    });
-    const unsubFood = DataService.food.subscribe((data) => {
-      setFood(data);
-      runCloudSync();
-    });
-    const unsubNotes = DataService.loveNotes.subscribe((data) => {
-      setNotes(data);
-      runCloudSync();
-    });
-    const unsubRegistry = DataService.registry.subscribe((data) => {
-      setRegistry(data);
-      runCloudSync();
-    });
-    const unsubMovies = DataService.movies.subscribe((data) => {
-      setMovies(data);
-      runCloudSync();
-    });
+    const unsubActivities = DataService.activities.subscribe(setActivities);
+    const unsubLogs = DataService.logs.subscribe(setLogs);
+    const unsubFood = DataService.food.subscribe(setFood);
+    const unsubNotes = DataService.loveNotes.subscribe(setNotes);
+    const unsubRegistry = DataService.registry.subscribe(setRegistry);
+    const unsubMovies = DataService.movies.subscribe(setMovies);
 
     return () => {
       unsubActivities();
@@ -326,27 +249,6 @@ export default function App() {
               </>
           )}
         </div>
-
-        {isCloudConnected && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-full shadow-sm text-xs font-bold border border-slate-200 dark:border-slate-700">
-            <button 
-              onClick={async () => {
-                setIsCloudSyncing(true);
-                const remoteData = await GoogleDriveService.sync();
-                if (remoteData) SyncService.merge(remoteData);
-                setIsCloudSyncing(false);
-              }}
-              disabled={isCloudSyncing}
-              className="flex items-center gap-2 hover:opacity-70 transition-opacity"
-            >
-              <Cloud className={`w-3 h-3 ${isCloudSyncing ? 'text-blue-500 animate-pulse' : 'text-emerald-500'}`} />
-              <span className={isCloudSyncing ? 'text-blue-600' : 'text-emerald-600'}>
-                {isCloudSyncing ? 'Syncing...' : 'Cloud Synced'}
-              </span>
-              {!isCloudSyncing && <RefreshCw className="w-3 h-3 text-slate-400" />}
-            </button>
-          </div>
-        )}
       </div>
 
       <Navigation 
