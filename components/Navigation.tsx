@@ -35,8 +35,10 @@ export const Navigation: React.FC<NavProps> = ({ activeTab, onTabChange, colorCl
 
   const NavList = () => (
     <div className="flex flex-col gap-2 p-4">
-      <div className="mb-8 px-4 py-2">
-        <h1 className="text-2xl font-bold font-['Outfit'] tracking-tight text-slate-800 dark:text-white">Eli & Nic</h1>
+      <div className="mb-8 px-4 py-2 flex items-center gap-2">
+        <div className="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center">
+          <Heart className="w-6 h-6 text-rose-500 fill-rose-500" />
+        </div>
       </div>
       {NAVIGATION_ITEMS.map((item) => {
         const isActive = activeTab === item.id;
@@ -66,7 +68,9 @@ export const Navigation: React.FC<NavProps> = ({ activeTab, onTabChange, colorCl
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 glass z-40 flex items-center justify-between px-4">
-        <span className="font-bold text-lg dark:text-white">Eli & Nic</span>
+        <div className="w-8 h-8 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center">
+          <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+        </div>
         <button onClick={() => setIsMobileOpen(true)} className="p-2 bg-white/50 dark:bg-slate-700/50 rounded-full">
           <Menu className="w-6 h-6 text-slate-700 dark:text-white" />
         </button>
