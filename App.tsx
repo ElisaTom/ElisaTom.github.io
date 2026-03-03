@@ -232,24 +232,17 @@ export default function App() {
     <div className={`flex min-h-screen transition-colors duration-700 ease-in-out ${themeClasses.bg}`}>
       
       {/* Sync Status Indicator */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-full shadow-sm text-xs font-bold border border-slate-200 dark:border-slate-700">
-          {peersCount > 0 ? (
-              <>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span className="text-emerald-600 dark:text-emerald-400">Connected</span>
-              </>
-          ) : (
-              <>
-                  <WifiOff className="w-3 h-3 text-slate-400" />
-                  <span className="text-slate-400">Offline</span>
-              </>
-          )}
+      {peersCount > 0 && (
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-full shadow-sm text-xs font-bold border border-slate-200 dark:border-slate-700">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-emerald-600 dark:text-emerald-400">Connected</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <Navigation 
         activeTab={activeTab} 
