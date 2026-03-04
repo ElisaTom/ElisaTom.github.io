@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Log, Language } from '../types';
 import { differenceInDays, addYears, isPast, getYear, format, getDaysInMonth, startOfMonth, getDay, addMonths, subMonths } from 'date-fns';
-import { X, Calendar as CalendarIcon, MapPin, Film, Utensils, ChevronLeft, ChevronRight, Plus, Star } from 'lucide-react';
+import { X, Calendar as CalendarIcon, MapPin, Film, Utensils, ChevronLeft, ChevronRight, Plus, Star, Camera, Image as ImageIcon } from 'lucide-react';
 import { it, enUS } from 'date-fns/locale';
 import { t } from '../i18n';
 
@@ -16,7 +16,7 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog, language }) => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newLog, setNewLog] = useState<Partial<Log>>({
-    title: '', type: 'other', rating: 5, notes: ''
+    title: '', type: 'other', rating: 5, notes: '', photo: ''
   });
 
   const dateLocale = language === 'it' ? it : enUS;
@@ -74,8 +74,19 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog, language }) => {
         date: selectedDate,
     } as Log);
 
-    setNewLog({ title: '', type: 'other', rating: 5, notes: '' });
+    setNewLog({ title: '', type: 'other', rating: 5, notes: '', photo: '' });
     setShowAddForm(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewLog(prev => ({ ...prev, photo: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const closeOverlay = () => {
@@ -259,6 +270,11 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog, language }) => {
                         <div>
                             <h4 className="font-bold text-slate-800 dark:text-white">{log.title}</h4>
                             {log.notes && <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">"{log.notes}"</p>}
+                            {log.photo && (
+                                <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                                    <img src={log.photo} alt={log.title} className="w-full h-auto max-h-48 object-cover" referrerPolicy="no-referrer" />
+                                </div>
+                            )}
                             <div className="flex items-center gap-2 mt-2">
                                 <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full uppercase text-slate-500 dark:text-slate-400">{log.type}</span>
                                 <span className="text-xs font-mono text-amber-500 font-bold">★ {log.rating}</span>
@@ -323,6 +339,35 @@ export const TabMemories: React.FC<Props> = ({ logs, onAddLog, language }) => {
                                    value={newLog.notes}
                                    onChange={e => setNewLog({...newLog, notes: e.target.value})}
                                />
+                           </div>
+                           <div>
+                               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">{t(language, "Photo")}</label>
+                               <div className="flex items-center gap-4">
+                                   <label className="flex-1 flex items-center justify-center gap-2 p-3 bg-white dark:bg-slate-800 border-2 border-dashed border-indigo-100 dark:border-indigo-800 rounded-xl cursor-pointer hover:border-indigo-400 transition-colors">
+                                       <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                                       {newLog.photo ? (
+                                           <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
+                                               <ImageIcon className="w-4 h-4" /> {t(language, "Change Photo")}
+                                           </div>
+                                       ) : (
+                                           <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
+                                               <Camera className="w-4 h-4" /> {t(language, "Upload Photo")}
+                                           </div>
+                                       )}
+                                   </label>
+                                   {newLog.photo && (
+                                       <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-indigo-200">
+                                           <img src={newLog.photo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                           <button 
+                                               type="button"
+                                               onClick={() => setNewLog(prev => ({ ...prev, photo: '' }))}
+                                               className="absolute top-0 right-0 p-0.5 bg-rose-500 text-white rounded-bl-lg"
+                                           >
+                                               <X className="w-3 h-3" />
+                                           </button>
+                                       </div>
+                                   )}
+                               </div>
                            </div>
                            <div className="flex gap-3 pt-2">
                                <button 

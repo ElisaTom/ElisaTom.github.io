@@ -12,13 +12,13 @@ interface Props {
 }
 
 export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, language }) => {
-  const [activeTab, setActiveTab] = useState<'wishlist' | 'active' | 'watched'>('active');
+  const [activeTab, setActiveTab] = useState<'wishlist' | 'watched'>('wishlist');
   const [showForm, setShowForm] = useState(false);
   const [rateItem, setRateItem] = useState<string | null>(null);
   const [ratingData, setRatingData] = useState({ rating: 0, review: '' });
 
   const [newItem, setNewItem] = useState<Partial<Movie>>({
-    title: '', platform: 'Netflix', type: 'series', genre: '', status: 'active', tracker: { s: 1, e: 1 }
+    title: '', platform: 'Netflix', type: 'series', genre: '', status: 'wishlist', tracker: { s: 1, e: 1 }
   });
 
   const filteredMovies = movies.filter(m => m.status === activeTab);
@@ -27,7 +27,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, l
     e.preventDefault();
     if (!newItem.title) return;
     onAdd({ ...newItem, id: Date.now().toString() } as Movie);
-    setNewItem({ title: '', platform: 'Netflix', type: 'series', genre: '', status: 'active', tracker: { s: 1, e: 1 } });
+    setNewItem({ title: '', platform: 'Netflix', type: 'series', genre: '', status: 'wishlist', tracker: { s: 1, e: 1 } });
     setShowForm(false);
   };
 
@@ -44,10 +44,6 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, l
       dateCompleted: new Date().toISOString().split('T')[0]
     });
     setRateItem(null);
-  };
-
-  const startWatching = (id: string) => {
-    onUpdate(id, { status: 'active', tracker: { s: 1, e: 1 } });
   };
 
   return (
@@ -71,14 +67,6 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, l
           }`}
         >
           <Bookmark className="w-4 h-4" /> {t(language, "To Watch")}
-        </button>
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`flex-1 py-2 rounded-lg text-sm font-bold capitalize transition-all flex items-center justify-center gap-2 ${
-            activeTab === 'active' ? 'bg-white dark:bg-slate-600 text-rose-600 dark:text-rose-300 shadow-sm' : 'text-slate-400 hover:text-rose-400'
-          }`}
-        >
-          <Play className="w-4 h-4" /> {t(language, "Watching Now")}
         </button>
         <button
           onClick={() => setActiveTab('watched')}
@@ -136,10 +124,6 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, l
               <span className="font-bold text-slate-700 dark:text-slate-300">{t(language, "To Watch")}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" checked={newItem.status === 'active'} onChange={() => setNewItem({...newItem, status: 'active'})} className="accent-rose-500 w-5 h-5" />
-              <span className="font-bold text-slate-700 dark:text-slate-300">{t(language, "Watching Now")}</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
               <input type="radio" checked={newItem.status === 'watched'} onChange={() => setNewItem({...newItem, status: 'watched'})} className="accent-rose-500 w-5 h-5" />
               <span className="font-bold text-slate-700 dark:text-slate-300">{t(language, "Watched")}</span>
             </label>
@@ -169,10 +153,10 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, l
                    <span className="text-xs text-slate-400">{movie.platform}</span>
                 </div>
                 <button 
-                  onClick={() => startWatching(movie.id)}
+                  onClick={() => handleFinish(movie.id)}
                   className="w-full mt-2 py-1.5 bg-rose-100 text-rose-600 text-xs font-bold rounded-lg hover:bg-rose-200"
                 >
-                  {t(language, "Start Watching")}
+                  {t(language, "Mark as Watched")}
                 </button>
               </div>
             );
@@ -210,39 +194,6 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, l
                     )}
                  </div>
               </div>
-
-              {movie.status === 'active' && (
-                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700 p-2 rounded-xl border border-slate-100 dark:border-slate-600 self-start md:self-center">
-                   {movie.type === 'series' && (
-                      <>
-                        <div className="flex flex-col items-center">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase">SEA</span>
-                          <input 
-                            type="number" className="w-10 text-center bg-transparent font-mono font-bold text-lg focus:outline-none dark:text-white"
-                            value={movie.tracker?.s || 1}
-                            onChange={(e) => onUpdate(movie.id, { tracker: { ...movie.tracker!, s: parseInt(e.target.value) } })}
-                          />
-                        </div>
-                        <div className="w-px h-8 bg-slate-200 dark:bg-slate-600" />
-                        <div className="flex flex-col items-center">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase">EP</span>
-                          <input 
-                            type="number" className="w-10 text-center bg-transparent font-mono font-bold text-lg focus:outline-none dark:text-white"
-                            value={movie.tracker?.e || 1}
-                            onChange={(e) => onUpdate(movie.id, { tracker: { ...movie.tracker!, e: parseInt(e.target.value) } })}
-                          />
-                        </div>
-                      </>
-                   )}
-                   <button 
-                     onClick={() => handleFinish(movie.id)}
-                     className="ml-2 p-2 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200 transition-colors"
-                     title="Mark as Finished"
-                   >
-                     <CheckCircle className="w-5 h-5" />
-                   </button>
-                </div>
-              )}
             </div>
           );
         })}
@@ -250,7 +201,7 @@ export const TabMedia: React.FC<Props> = ({ movies, onAdd, onUpdate, onDelete, l
         {filteredMovies.length === 0 && (
            <div className="text-center py-12 text-slate-400">
              <Film className="w-12 h-12 mx-auto mb-2 opacity-20" />
-             <p>{t(language, "No titles in")} {activeTab === 'wishlist' ? t(language, 'To Watch') : activeTab === 'active' ? t(language, 'Watching Now') : t(language, 'Library')}.</p>
+             <p>{t(language, "No titles in")} {activeTab === 'wishlist' ? t(language, 'To Watch') : t(language, 'Library')}.</p>
            </div>
         )}
       </div>

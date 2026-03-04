@@ -48,7 +48,6 @@ export const TabWishlist: React.FC<Props> = ({ items, onAdd, onUpdate, onDelete,
               className="w-full p-3 bg-white/50 dark:bg-slate-700/50 border border-teal-100 dark:border-teal-900 rounded-xl dark:text-white"
               value={newItem.text}
               onChange={e => setNewItem({...newItem, text: e.target.value})}
-              placeholder={t(language, "e.g. Dyson Airwrap")}
               required
             />
           </div>

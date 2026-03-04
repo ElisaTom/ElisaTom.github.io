@@ -44,7 +44,7 @@ export const TabDiscovery: React.FC<Props> = ({ activities, foodSpots, movies, l
         }
         return foodPool;
       case 'Media': 
-        let mediaPool = movies.filter(m => m.status === 'wishlist' || m.status === 'active');
+        let mediaPool = movies.filter(m => m.status === 'wishlist');
         if (includeWatched) {
           mediaPool = [...mediaPool, ...movies.filter(m => m.status === 'watched')];
         }

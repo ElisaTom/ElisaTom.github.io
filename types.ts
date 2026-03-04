@@ -66,5 +66,6 @@ export interface Log extends BaseItem {
   rating: number; // 1-5
   date: string;
   notes?: string;
+  photo?: string;
   type: 'milestone' | 'activity' | 'media' | 'food' | 'other';
 }
