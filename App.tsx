@@ -72,28 +72,13 @@ const SetupWizard = ({ onComplete }: { onComplete: () => void }) => {
         
         <div className="space-y-2">
             <h1 className="text-3xl font-bold text-slate-800 dark:text-white font-['Outfit']">Welcome</h1>
-            <p className="text-slate-500 dark:text-slate-400">Enter your couple's secret word.</p>
-        </div>
-
-        <div className="bg-slate-100 dark:bg-slate-900 p-6 rounded-2xl text-left space-y-4">
-             <div className="flex items-start gap-3">
-                <Lock className="w-5 h-5 text-slate-400 mt-1 shrink-0" />
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Choose a unique password (e.g., <code>eli-nic-love-25</code>).
-                </p>
-             </div>
-             <div className="flex items-start gap-3">
-                <Users className="w-5 h-5 text-slate-400 mt-1 shrink-0" />
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Use the <b>same password</b> on both phones to connect.
-                </p>
-             </div>
+            <p className="text-slate-500 dark:text-slate-400">Use the same password on both phones to connect</p>
         </div>
 
         <div className="space-y-4">
             <input 
                 className="w-full text-center text-2xl font-bold tracking-widest p-4 rounded-xl bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 focus:border-indigo-500 outline-none uppercase dark:text-white placeholder:text-slate-300"
-                placeholder="CODE"
+                placeholder="PASSWORD"
                 value={roomCode}
                 onChange={e => setRoomCode(e.target.value.toUpperCase().replace(/\s/g,''))}
             />
