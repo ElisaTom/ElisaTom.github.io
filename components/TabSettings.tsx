@@ -1,5 +1,5 @@
 import React from 'react';
-import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor, Language } from '../types';
+import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor, Language, Recipe } from '../types';
 import { format } from 'date-fns';
 import { Download, Upload, Database, Moon, Sun, Palette, Check, RefreshCw, Languages } from 'lucide-react';
 import { DataService } from '../services/dataService';
@@ -10,6 +10,7 @@ interface Props {
   logs: Log[];
   activities: Activity[];
   foodSpots: FoodSpot[];
+  recipes: Recipe[];
   movies: Movie[];
   registry: RegistryItem[];
   loveNotes: LoveNote[];
@@ -22,7 +23,7 @@ interface Props {
 }
 
 export const TabSettings: React.FC<Props> = ({ 
-  logs, activities, foodSpots, movies, registry, loveNotes, 
+  logs, activities, foodSpots, recipes, movies, registry, loveNotes, 
   theme, setTheme, themeColor, setThemeColor,
   language, setLanguage
 }) => {
@@ -30,7 +31,7 @@ export const TabSettings: React.FC<Props> = ({
   const handleExport = () => {
     const data = {
       timestamp: new Date().toISOString(),
-      logs, activities, foodSpots, movies, registry, loveNotes
+      logs, activities, foodSpots, recipes, movies, registry, loveNotes
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -57,6 +58,7 @@ export const TabSettings: React.FC<Props> = ({
         if(json.movies) json.movies.forEach((i: any) => DataService.movies.add(i));
         if(json.registry) json.registry.forEach((i: any) => DataService.registry.add(i));
         if(json.loveNotes) json.loveNotes.forEach((i: any) => DataService.loveNotes.add(i));
+        if(json.recipes) json.recipes.forEach((i: any) => DataService.recipes.add(i));
         
         alert(t(language, "Import Complete!"));
       } catch (err) {

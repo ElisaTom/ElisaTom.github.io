@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { Activity, FoodSpot, Movie, Language } from '../types';
+import { Activity, FoodSpot, Movie, Language, Recipe } from '../types';
 import { pickFromList } from '../services/geminiService';
-import { Sparkles, Loader, Dice5, BrainCircuit, MapPin, Battery, Wallet, Utensils, Film } from 'lucide-react';
+import { Sparkles, Loader, Dice5, BrainCircuit, MapPin, Battery, Wallet, Utensils, Film, ChefHat } from 'lucide-react';
 import { t } from '../i18n';
 
 interface Props {
   activities: Activity[];
   foodSpots: FoodSpot[];
+  recipes: Recipe[];
   movies: Movie[];
   language: Language;
 }
 
-export const TabDiscovery: React.FC<Props> = ({ activities, foodSpots, movies, language }) => {
+export const TabDiscovery: React.FC<Props> = ({ activities, foodSpots, recipes, movies, language }) => {
   const [domain, setDomain] = useState<'Activity' | 'Food' | 'Media'>('Activity');
+  const [foodMode, setFoodMode] = useState<'out' | 'home'>('out');
   const [mode, setMode] = useState<'fate' | 'smart'>('fate');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -26,6 +28,7 @@ export const TabDiscovery: React.FC<Props> = ({ activities, foodSpots, movies, l
   // --- Food Specific Filters ---
   const [cuisine, setCuisine] = useState('');
   const [includeVisited, setIncludeVisited] = useState(false);
+  const [recipeCategory, setRecipeCategory] = useState<string>('Any');
 
   // --- Media Specific Filters ---
   const [mediaGenre, setMediaGenre] = useState('');
@@ -38,11 +41,19 @@ export const TabDiscovery: React.FC<Props> = ({ activities, foodSpots, movies, l
       case 'Activity': 
         return activities;
       case 'Food': 
-        let foodPool = foodSpots.filter(f => f.status === 'wishlist');
-        if (includeVisited) {
-          foodPool = [...foodPool, ...foodSpots.filter(f => f.status === 'visited')];
+        if (foodMode === 'out') {
+          let foodPool = foodSpots.filter(f => f.status === 'wishlist');
+          if (includeVisited) {
+            foodPool = [...foodPool, ...foodSpots.filter(f => f.status === 'visited')];
+          }
+          return foodPool;
+        } else {
+          let recipePool = recipes;
+          if (recipeCategory !== 'Any') {
+            recipePool = recipes.filter(r => r.category === recipeCategory);
+          }
+          return recipePool;
         }
-        return foodPool;
       case 'Media': 
         let mediaPool = movies.filter(m => m.status === 'wishlist');
         if (includeWatched) {
@@ -83,7 +94,13 @@ export const TabDiscovery: React.FC<Props> = ({ activities, foodSpots, movies, l
     try {
       let criteria: any = {};
       if (domain === 'Activity') criteria = { energy: `${energy}/5`, budget: `${budget}/3`, location };
-      else if (domain === 'Food') criteria = { cuisine: cuisine || 'Any', budget: `${budget}/3`, location: location || 'Any' };
+      else if (domain === 'Food') {
+        if (foodMode === 'out') {
+          criteria = { cuisine: cuisine || 'Any', budget: `${budget}/3`, location: location || 'Any' };
+        } else {
+          criteria = { category: recipeCategory };
+        }
+      }
       else if (domain === 'Media') criteria = { genre: mediaGenre || 'Any', platform: mediaPlatform, type: mediaType };
 
       const decision = await pickFromList(pool, domain, criteria);
@@ -123,6 +140,28 @@ export const TabDiscovery: React.FC<Props> = ({ activities, foodSpots, movies, l
           <button onClick={() => { setDomain('Food'); setResult(null); }} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${domain === 'Food' ? 'bg-white dark:bg-slate-600 shadow-sm text-orange-600 dark:text-orange-300' : 'text-slate-400'}`}>{t(language, "Food")}</button>
           <button onClick={() => { setDomain('Media'); setResult(null); }} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${domain === 'Media' ? 'bg-white dark:bg-slate-600 shadow-sm text-rose-600 dark:text-rose-300' : 'text-slate-400'}`}>{t(language, "Media")}</button>
         </div>
+
+        {/* Food Mode Selector */}
+        {domain === 'Food' && (
+          <div className="flex p-1 bg-orange-100/50 dark:bg-slate-700/50 rounded-xl animate-fade-in">
+            <button
+              onClick={() => { setFoodMode('out'); setResult(null); }}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                foodMode === 'out' ? 'bg-white dark:bg-slate-600 text-orange-600 dark:text-orange-300 shadow-sm' : 'text-slate-400 hover:text-orange-400'
+              }`}
+            >
+              <MapPin className="w-3 h-3" /> {t(language, "Eating Out")}
+            </button>
+            <button
+              onClick={() => { setFoodMode('home'); setResult(null); }}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                foodMode === 'home' ? 'bg-white dark:bg-slate-600 text-orange-600 dark:text-orange-300 shadow-sm' : 'text-slate-400 hover:text-orange-400'
+              }`}
+            >
+              <ChefHat className="w-3 h-3" /> {t(language, "Cooking at Home")}
+            </button>
+          </div>
+        )}
 
         {/* Mode Selector */}
         <div className="grid grid-cols-2 gap-4">
@@ -167,14 +206,32 @@ export const TabDiscovery: React.FC<Props> = ({ activities, foodSpots, movies, l
 
               {domain === 'Food' && (
                 <>
-                  <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/30 rounded-xl border border-orange-100 dark:border-orange-900">
-                    <input type="checkbox" checked={includeVisited} onChange={(e) => setIncludeVisited(e.target.checked)} className="w-5 h-5 accent-orange-500" />
-                    <span className="text-sm font-bold text-orange-800 dark:text-orange-200">{t(language, "Include visited spots?")}</span>
-                  </div>
-                  <div className="bg-white/50 dark:bg-slate-700/50 p-4 rounded-2xl">
-                     <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 font-bold text-sm mb-2"><Utensils className="w-4 h-4" /> {t(language, "Cuisine")}</div>
-                     <input className="w-full bg-transparent border-b border-slate-300 dark:border-slate-500 focus:border-orange-500 outline-none py-1 text-sm dark:text-white" value={cuisine} onChange={(e) => setCuisine(e.target.value)} />
-                  </div>
+                  {foodMode === 'out' ? (
+                    <>
+                      <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/30 rounded-xl border border-orange-100 dark:border-orange-900">
+                        <input type="checkbox" checked={includeVisited} onChange={(e) => setIncludeVisited(e.target.checked)} className="w-5 h-5 accent-orange-500" />
+                        <span className="text-sm font-bold text-orange-800 dark:text-orange-200">{t(language, "Include visited spots?")}</span>
+                      </div>
+                      <div className="bg-white/50 dark:bg-slate-700/50 p-4 rounded-2xl">
+                         <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 font-bold text-sm mb-2"><Utensils className="w-4 h-4" /> {t(language, "Cuisine")}</div>
+                         <input className="w-full bg-transparent border-b border-slate-300 dark:border-slate-500 focus:border-orange-500 outline-none py-1 text-sm dark:text-white" value={cuisine} onChange={(e) => setCuisine(e.target.value)} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-white/50 dark:bg-slate-700/50 p-4 rounded-2xl">
+                      <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 font-bold text-sm mb-2"><ChefHat className="w-4 h-4" /> {t(language, "Select Category")}</div>
+                      <select 
+                        className="w-full bg-transparent border-b border-slate-300 dark:border-slate-500 focus:border-orange-500 outline-none py-1 text-sm dark:text-white"
+                        value={recipeCategory}
+                        onChange={(e) => setRecipeCategory(e.target.value)}
+                      >
+                        <option value="Any">Any</option>
+                        {['Appetizers', 'First Course', 'Second Course', 'Dessert', 'Ethnic', 'Other'].map(c => (
+                          <option key={c} value={c}>{t(language, c)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </>
               )}
 

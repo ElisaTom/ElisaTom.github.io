@@ -69,3 +69,12 @@ export interface Log extends BaseItem {
   photo?: string;
   type: 'milestone' | 'activity' | 'media' | 'food' | 'other';
 }
+
+export interface Recipe extends BaseItem {
+  title: string;
+  category: 'Appetizers' | 'First Course' | 'Second Course' | 'Dessert' | 'Ethnic' | 'Other';
+  ingredients?: string;
+  instructions?: string;
+  rating?: number;
+  photo?: string;
+}

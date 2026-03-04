@@ -66,6 +66,9 @@ const translations: Record<Language, Record<string, string>> = {
     "The Wheel of Fate Chose": "The Wheel of Fate Chose",
     "The Oracle Recommends": "The Oracle Recommends",
     "Match": "Match",
+    "Eating Out": "Eating Out",
+    "Cooking at Home": "Cooking at Home",
+    "Select Category": "Select Category",
     
     // Activities
     "Activities": "Activities",
@@ -86,6 +89,23 @@ const translations: Record<Language, Record<string, string>> = {
     "Visited Journal": "Tried",
     "To Devour": "To Try",
     "No visited spots yet": "No visited spots yet.",
+    
+    // Recipes
+    "Recipes": "Recipes",
+    "Add Recipe": "Add Recipe",
+    "Recipe Title": "Recipe Title",
+    "Ingredients": "Ingredients",
+    "Instructions": "Instructions",
+    "Appetizers": "Appetizers",
+    "First Course": "First Course",
+    "Second Course": "Second Course",
+    "Dessert": "Dessert",
+    "Ethnic": "Ethnic",
+    "Other": "Other",
+    "No recipes yet": "No recipes yet.",
+    "Save Recipe": "Save Recipe",
+    "List ingredients...": "List ingredients...",
+    "How to cook...": "How to cook...",
     
     // Media
     "Watchlist": "Watchlist",

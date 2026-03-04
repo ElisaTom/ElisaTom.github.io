@@ -1,6 +1,6 @@
 
 import { Storage, KEYS } from './storage';
-import { Activity, Movie, FoodSpot, RegistryItem, LoveNote, Log } from '../types';
+import { Activity, Movie, FoodSpot, RegistryItem, LoveNote, Log, Recipe } from '../types';
 
 // Wrapper that just points to LocalStorage
 // The "Sync" happens separately via SyncService events or manual triggers
@@ -19,4 +19,5 @@ export const DataService = {
   registry: createService<RegistryItem>(KEYS.registry),
   loveNotes: createService<LoveNote>(KEYS.loveNotes),
   logs: createService<Log>(KEYS.logs),
+  recipes: createService<Recipe>(KEYS.recipes),
 };

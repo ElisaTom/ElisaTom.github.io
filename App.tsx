@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { DataService } from './services/dataService';
 import { Config } from './services/storage';
 import { SyncService } from './services/syncService';
-import { TabId, Activity, Log, FoodSpot, LoveNote, RegistryItem, Movie, ThemeMode, ThemeColor, Language } from './types';
+import { TabId, Activity, Log, FoodSpot, LoveNote, RegistryItem, Movie, ThemeMode, ThemeColor, Language, Recipe } from './types';
 import { Navigation } from './components/Navigation';
 import { TabHome } from './components/TabHome';
 import { TabMemories } from './components/TabMemories';
@@ -123,6 +123,7 @@ export default function App() {
   const [notes, setNotes] = useState<LoveNote[]>([]);
   const [registry, setRegistry] = useState<RegistryItem[]>([]);
   const [movies, setMovies] = useState<Movie[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
 
   // Toggle Dark Mode
   useEffect(() => {
@@ -143,6 +144,7 @@ export default function App() {
     const unsubNotes = DataService.loveNotes.subscribe(setNotes);
     const unsubRegistry = DataService.registry.subscribe(setRegistry);
     const unsubMovies = DataService.movies.subscribe(setMovies);
+    const unsubRecipes = DataService.recipes.subscribe(setRecipes);
 
     return () => {
       unsubActivities();
@@ -151,6 +153,7 @@ export default function App() {
       unsubNotes();
       unsubRegistry();
       unsubMovies();
+      unsubRecipes();
     };
   }, [isSetup]);
 
@@ -194,6 +197,8 @@ export default function App() {
   const handleUpdateMovie = (id: string, data: Partial<Movie>) => DataService.movies.update(id, data);
   const handleDeleteMovie = (id: string) => DataService.movies.delete(id);
   const handleAddLog = (log: Log) => DataService.logs.add(log);
+  const handleAddRecipe = (recipe: Recipe) => DataService.recipes.add(recipe);
+  const handleDeleteRecipe = (id: string) => DataService.recipes.delete(id);
 
   const handleSetTheme = (t: ThemeMode) => {
     setTheme(t);
@@ -241,9 +246,9 @@ export default function App() {
             switch (activeTab) {
                 case 'home': return <TabHome logs={logs} onNavigate={setActiveTab} dayCount={streak} language={language} />;
                 case 'memories': return <TabMemories logs={logs} onAddLog={handleAddLog} language={language} />;
-                case 'discovery': return <TabDiscovery activities={activities} foodSpots={food} movies={movies} language={language} />;
+                case 'discovery': return <TabDiscovery activities={activities} foodSpots={food} recipes={recipes} movies={movies} language={language} />;
                 case 'activities': return <TabActivities activities={activities} onAdd={handleAddActivity} onDelete={handleDeleteActivity} language={language} />;
-                case 'food': return <TabFood foodSpots={food} onAdd={handleAddFood} onDelete={handleDeleteFood} language={language} />;
+                case 'food': return <TabFood foodSpots={food} recipes={recipes} onAdd={handleAddFood} onDelete={handleDeleteFood} onAddRecipe={handleAddRecipe} onDeleteRecipe={handleDeleteRecipe} language={language} />;
                 case 'wishlist': return <TabWishlist items={registry} onAdd={handleAddRegistry} onUpdate={handleUpdateRegistry} onDelete={handleDeleteRegistry} language={language} />;
                 case 'lovenotes': return <TabLoveNotes notes={notes} onAdd={handleAddNote} onDelete={handleDeleteNote} language={language} />;
                 case 'media': return <TabMedia movies={movies} onAdd={handleAddMovie} onUpdate={handleUpdateMovie} onDelete={handleDeleteMovie} language={language} />;
@@ -252,6 +257,7 @@ export default function App() {
                   logs={logs} 
                   activities={activities} 
                   foodSpots={food} 
+                  recipes={recipes}
                   movies={movies} 
                   registry={registry} 
                   loveNotes={notes} 

@@ -1,6 +1,6 @@
 
 // This replaces Firebase with simple LocalStorage
-import { Activity, Movie, FoodSpot, RegistryItem, LoveNote, Log } from '../types';
+import { Activity, Movie, FoodSpot, RegistryItem, LoveNote, Log, Recipe } from '../types';
 
 export const KEYS = {
   activities: 'db_activities',
@@ -9,6 +9,7 @@ export const KEYS = {
   registry: 'db_registry',
   loveNotes: 'db_loveNotes',
   logs: 'db_logs',
+  recipes: 'db_recipes',
   config: 'couple_os_config'
 };
 
