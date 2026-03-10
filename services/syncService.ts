@@ -15,12 +15,25 @@ export const SyncService = {
     onStatusChange(1);
 
     unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists() && !isPushing) {
+      if (docSnap.exists()) {
+        if (isPushing) return; // Ignora i rimbalzi mentre stiamo salvando noi
+        
         const data = docSnap.data() as any;
-        if (data && data.timestamp > AppStorage.Storage.getLastModified()) {
-           console.log("Nuovi ricordi scaricati dal Cloud!");
+        const localTs = AppStorage.Storage.getLastModified();
+        
+        // Se il Cloud ha dati più nuovi, SCARICALI
+        if (data && data.timestamp > localTs) {
+           console.log("Novità dal Cloud! Scarico i dati...");
            SyncService.merge(data);
+        } 
+        // Se invece il telefono ha dati più nuovi, CARICALI
+        else if (data && localTs > data.timestamp) {
+           console.log("Dati locali più recenti, aggiorno il Cloud...");
+           SyncService.pushData(roomId);
         }
+      } else {
+        // Se la stanza è vuota (primo accesso assoluto), crea il salvataggio
+        SyncService.pushData(roomId);
       }
     });
 
@@ -29,8 +42,6 @@ export const SyncService = {
            SyncService.pushData(roomId);
        }
     });
-
-    SyncService.pushData(roomId);
   },
 
   pushData: async (roomId?: string) => {
