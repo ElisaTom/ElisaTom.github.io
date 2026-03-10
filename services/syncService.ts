@@ -1,76 +1,93 @@
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { db } from './firebase';
-import * as AppStorage from './storage';
 
-let unsubscribe: any = null;
-let isPushing = false;
+import { joinRoom } from 'trystero/torrent';
+import { Storage, KEYS } from './storage';
+import { Config } from './storage';
+
+// Types of data to sync
+interface SyncPayload {
+  activities: any[];
+  movies: any[];
+  food: any[];
+  registry: any[];
+  loveNotes: any[];
+  logs: any[];
+  timestamp: number;
+}
+
+let room: any = null;
+let sendAction: any = null;
+let onReceiveAction: any = null;
 
 export const SyncService = {
+  // Join a "Room" based on the Couple ID
   connect: (roomId: string, onStatusChange: (peers: number) => void) => {
-    if (unsubscribe) return;
+    if (room) return; // Already connected
 
-    console.log(`Collegato alla stanza Cloud: ${roomId}`);
-    const docRef = doc(db, 'rooms', roomId);
+    console.log(`Connecting to Sync Room: ${roomId}`);
+    
+    // Config: appId distinguishes our app traffic from others on the public tracker
+    room = joinRoom({ appId: 'couple-os-v1' }, roomId);
 
-    onStatusChange(1);
-
-    unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists() && !isPushing) {
-        const data = docSnap.data() as any;
-        if (data && data.timestamp > AppStorage.Storage.getLastModified()) {
-           console.log("Nuovi ricordi scaricati dal Cloud!");
-           SyncService.merge(data);
-        }
-      }
+    // Track peers
+    room.onPeerJoin((peerId: string) => {
+      console.log('Partner joined!', peerId);
+      onStatusChange(1);
+      SyncService.pushData(); // Auto-push when partner joins
     });
 
-    window.addEventListener('db-update', () => {
-       if (!isPushing) {
-           SyncService.pushData(roomId);
-       }
+    room.onPeerLeave((peerId: string) => {
+      console.log('Partner left', peerId);
+      onStatusChange(0);
     });
 
-    SyncService.pushData(roomId);
+    // Create Action Channel
+    const [send, get] = room.makeAction('sync_data');
+    sendAction = send;
+    onReceiveAction = get;
+
+    // Handle Incoming Data
+    onReceiveAction((data: SyncPayload, peerId: string) => {
+      console.log("Received Sync Data from partner", data);
+      SyncService.merge(data);
+      alert("Sincronizzazione completata! Nuovi dati dal partner.");
+    });
   },
 
-  pushData: async (roomId?: string) => {
-    const id = roomId || AppStorage.Config.get().roomId;
-    if (!id) return;
-
-    isPushing = true;
-    const payload = {
-      activities: AppStorage.Storage.get(AppStorage.KEYS.activities) || [],
-      movies: AppStorage.Storage.get(AppStorage.KEYS.movies) || [],
-      food: AppStorage.Storage.get(AppStorage.KEYS.food) || [],
-      registry: AppStorage.Storage.get(AppStorage.KEYS.registry) || [],
-      loveNotes: AppStorage.Storage.get(AppStorage.KEYS.loveNotes) || [],
-      logs: AppStorage.Storage.get(AppStorage.KEYS.logs) || [],
-      timestamp: AppStorage.Storage.getLastModified()
+  // Send local data to partner
+  pushData: () => {
+    if (!sendAction) return;
+    
+    const payload: SyncPayload = {
+      activities: Storage.get(KEYS.activities),
+      movies: Storage.get(KEYS.movies),
+      food: Storage.get(KEYS.food),
+      registry: Storage.get(KEYS.registry),
+      loveNotes: Storage.get(KEYS.loveNotes),
+      logs: Storage.get(KEYS.logs),
+      timestamp: Storage.getLastModified()
     };
     
-    try {
-        await setDoc(doc(db, 'rooms', id), payload, { merge: true });
-    } catch (e) {
-        console.error("Errore di sincronizzazione Cloud:", e);
-    }
-    
-    setTimeout(() => { isPushing = false; }, 1000);
+    sendAction(payload);
+    console.log("Data pushed to partner");
   },
 
-  merge: (remote: any) => {
-    if (!remote) return;
+  // Merge logic: Combine arrays, dedup by ID, prefer newer updatedAt
+  merge: (remote: SyncPayload) => {
     const mergeCollection = (key: string, remoteItems: any[]) => {
-      if (!remoteItems) return;
-      const localItems = AppStorage.Storage.get<any>(key) || [];
+      const localItems = Storage.get<any>(key);
       const map = new Map();
 
-      localItems.forEach((i: any) => map.set(i.id, i));
+      // Load local
+      localItems.forEach(i => map.set(i.id, i));
 
-      remoteItems.forEach((remoteItem: any) => {
+      // Merge remote
+      remoteItems.forEach(remoteItem => {
         const localItem = map.get(remoteItem.id);
         if (!localItem) {
+          // New item from partner
           map.set(remoteItem.id, remoteItem);
         } else {
+          // Conflict: take the one with newer timestamp
           const localTime = localItem.updatedAt || 0;
           const remoteTime = remoteItem.updatedAt || 0;
           if (remoteTime > localTime) {
@@ -79,16 +96,15 @@ export const SyncService = {
         }
       });
 
-      AppStorage.Storage.set(key, Array.from(map.values()), remote.timestamp);
+      // Save back to storage
+      Storage.set(key, Array.from(map.values()), remote.timestamp);
     };
 
-    isPushing = true;
-    mergeCollection(AppStorage.KEYS.activities, remote.activities);
-    mergeCollection(AppStorage.KEYS.movies, remote.movies);
-    mergeCollection(AppStorage.KEYS.food, remote.food);
-    mergeCollection(AppStorage.KEYS.registry, remote.registry);
-    mergeCollection(AppStorage.KEYS.loveNotes, remote.loveNotes);
-    mergeCollection(AppStorage.KEYS.logs, remote.logs);
-    setTimeout(() => { isPushing = false; }, 500);
+    mergeCollection(KEYS.activities, remote.activities);
+    mergeCollection(KEYS.movies, remote.movies);
+    mergeCollection(KEYS.food, remote.food);
+    mergeCollection(KEYS.registry, remote.registry);
+    mergeCollection(KEYS.loveNotes, remote.loveNotes);
+    mergeCollection(KEYS.logs, remote.logs);
   }
 };

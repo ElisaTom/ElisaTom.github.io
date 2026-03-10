@@ -1,14 +1,16 @@
 import React from 'react';
-import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor, Language } from '../types';
+import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor, Language, Recipe } from '../types';
 import { format } from 'date-fns';
-import { Download, Upload, Database, Moon, Sun, Palette, Check } from 'lucide-react';
+import { Download, Upload, Database, Moon, Sun, Palette, Check, RefreshCw, Languages } from 'lucide-react';
 import { DataService } from '../services/dataService';
+import { resetFirebaseConfig } from '../services/firebase';
 import { t } from '../i18n';
 
 interface Props {
   logs: Log[];
   activities: Activity[];
   foodSpots: FoodSpot[];
+  recipes: Recipe[];
   movies: Movie[];
   registry: RegistryItem[];
   loveNotes: LoveNote[];
@@ -21,7 +23,7 @@ interface Props {
 }
 
 export const TabSettings: React.FC<Props> = ({ 
-  logs, activities, foodSpots, movies, registry, loveNotes, 
+  logs, activities, foodSpots, recipes, movies, registry, loveNotes, 
   theme, setTheme, themeColor, setThemeColor,
   language, setLanguage
 }) => {
@@ -29,7 +31,7 @@ export const TabSettings: React.FC<Props> = ({
   const handleExport = () => {
     const data = {
       timestamp: new Date().toISOString(),
-      logs, activities, foodSpots, movies, registry, loveNotes
+      logs, activities, foodSpots, recipes, movies, registry, loveNotes
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -56,6 +58,7 @@ export const TabSettings: React.FC<Props> = ({
         if(json.movies) json.movies.forEach((i: any) => DataService.movies.add(i));
         if(json.registry) json.registry.forEach((i: any) => DataService.registry.add(i));
         if(json.loveNotes) json.loveNotes.forEach((i: any) => DataService.loveNotes.add(i));
+        if(json.recipes) json.recipes.forEach((i: any) => DataService.recipes.add(i));
         
         alert(t(language, "Import Complete!"));
       } catch (err) {
@@ -73,11 +76,13 @@ export const TabSettings: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* --- SECTION: APPEARANCE --- */}
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <Palette className="w-4 h-4" /> {t(language, "Appearance")}
         </h3>
 
+        {/* Theme Mode */}
         <div className="glass-card p-4 rounded-2xl flex items-center justify-between dark:bg-slate-800">
            <div className="flex items-center gap-4">
               <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-300">
@@ -104,6 +109,7 @@ export const TabSettings: React.FC<Props> = ({
            </div>
         </div>
 
+        {/* Theme Color Selector */}
         <div className="glass-card p-4 rounded-2xl space-y-3 dark:bg-slate-800">
            <div className="flex items-center gap-4">
               <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-300">
@@ -141,12 +147,14 @@ export const TabSettings: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* --- SECTION: DATA MANAGEMENT --- */}
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <Database className="w-4 h-4" /> {t(language, "Data Management")}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           {/* Export */}
            <button 
              onClick={handleExport}
              className="glass-card p-6 rounded-2xl flex flex-col items-center gap-3 hover:bg-white/60 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors group text-center"
@@ -160,6 +168,7 @@ export const TabSettings: React.FC<Props> = ({
               </div>
            </button>
 
+           {/* Import */}
            <div className="glass-card p-6 rounded-2xl flex flex-col items-center gap-3 hover:bg-white/60 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors group text-center relative">
               <div className="p-3 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 rounded-full group-hover:scale-110 transition-transform">
                 <Upload className="w-6 h-6" />
@@ -176,6 +185,18 @@ export const TabSettings: React.FC<Props> = ({
               />
            </div>
         </div>
+        
+        {/* Reset Connection */}
+        <button 
+           onClick={() => {
+              if(confirm(t(language, "Are you sure? This will disconnect the database and require reconfiguration."))) {
+                  resetFirebaseConfig();
+              }
+           }}
+           className="w-full mt-4 p-4 border border-rose-200 dark:border-rose-900 rounded-2xl flex items-center justify-center gap-2 text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors text-sm font-bold"
+        >
+           <RefreshCw className="w-4 h-4" /> {t(language, "Reset Database Connection")}
+        </button>
       </div>
 
       <div className="text-center pt-8 text-slate-300 text-xs font-mono">
