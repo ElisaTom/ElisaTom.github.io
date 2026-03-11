@@ -1,7 +1,7 @@
-
 import { joinRoom } from 'trystero/torrent';
 import { Storage, KEYS } from './storage';
 import { Config } from './storage';
+import { pullFromFirestore, pushToFirestore, subscribeToFirestore } from './firestoreSync';
 
 // Types of data to sync
 interface SyncPayload {
@@ -11,12 +11,14 @@ interface SyncPayload {
   registry: any[];
   loveNotes: any[];
   logs: any[];
+  recipes: any[];
   timestamp: number;
 }
 
 let room: any = null;
 let sendAction: any = null;
 let onReceiveAction: any = null;
+let currentRoomId: string | null = null;
 
 export const SyncService = {
   // Join a "Room" based on the Couple ID
@@ -24,7 +26,8 @@ export const SyncService = {
     if (room) return; // Already connected
 
     console.log(`Connecting to Sync Room: ${roomId}`);
-    
+    currentRoomId = roomId;
+
     // Config: appId distinguishes our app traffic from others on the public tracker
     room = joinRoom({ appId: 'couple-os-v1' }, roomId);
 
@@ -51,6 +54,14 @@ export const SyncService = {
       SyncService.merge(data);
       alert("Sincronizzazione completata! Nuovi dati dal partner.");
     });
+
+    // Pull any data written to Firestore while we were offline
+    pullFromFirestore(roomId);
+
+    // Subscribe to real-time Firestore changes from the partner
+    subscribeToFirestore(roomId, () => {
+      console.log("Firestore sync received");
+    });
   },
 
   // Send local data to partner
@@ -64,11 +75,15 @@ export const SyncService = {
       registry: Storage.get(KEYS.registry),
       loveNotes: Storage.get(KEYS.loveNotes),
       logs: Storage.get(KEYS.logs),
+      recipes: Storage.get(KEYS.recipes),
       timestamp: Storage.getLastModified()
     };
     
     sendAction(payload);
     console.log("Data pushed to partner");
+
+    // Also persist to Firestore so it's available when partner comes back online
+    if (currentRoomId) pushToFirestore(currentRoomId);
   },
 
   // Merge logic: Combine arrays, dedup by ID, prefer newer updatedAt
@@ -100,11 +115,12 @@ export const SyncService = {
       Storage.set(key, Array.from(map.values()), remote.timestamp);
     };
 
-    mergeCollection(KEYS.activities, remote.activities);
-    mergeCollection(KEYS.movies, remote.movies);
-    mergeCollection(KEYS.food, remote.food);
-    mergeCollection(KEYS.registry, remote.registry);
-    mergeCollection(KEYS.loveNotes, remote.loveNotes);
-    mergeCollection(KEYS.logs, remote.logs);
+    mergeCollection(KEYS.activities, remote.activities || []);
+    mergeCollection(KEYS.movies, remote.movies || []);
+    mergeCollection(KEYS.food, remote.food || []);
+    mergeCollection(KEYS.registry, remote.registry || []);
+    mergeCollection(KEYS.loveNotes, remote.loveNotes || []);
+    mergeCollection(KEYS.logs, remote.logs || []);
+    mergeCollection(KEYS.recipes, remote.recipes || []);
   }
 };
