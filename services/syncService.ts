@@ -1,83 +1,158 @@
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { db } from './firebase';
-import * as AppStorage from './storage';
 
-let unsubscribe: any = null;
-let isPushing = false;
-let syncTimeout: any = null;
+import { Storage, KEYS } from './storage';
+import { Config } from './storage';
+
+// Types of data to sync
+interface SyncPayload {
+  activities: any[];
+  movies: any[];
+  food: any[];
+  registry: any[];
+  loveNotes: any[];
+  logs: any[];
+  recipes: any[];
+  timestamp: number;
+}
+
+let currentRoomId: string | null = null;
+let syncInterval: any = null;
+let pushTimeout: any = null;
+let isConnected = false;
+let statusCallback: ((peers: number) => void) | null = null;
+
+const updateStatus = (status: boolean) => {
+  if (isConnected !== status) {
+    isConnected = status;
+    if (statusCallback) statusCallback(status ? 1 : 0);
+  }
+};
 
 export const SyncService = {
+  // Connect to the room and start periodic sync
   connect: (roomId: string, onStatusChange: (peers: number) => void) => {
-    if (unsubscribe) return;
+    if (currentRoomId === roomId) return; // Already connected
+    
+    console.log(`Connecting to Sync Room: ${roomId}`);
+    currentRoomId = roomId;
+    statusCallback = onStatusChange;
+    
+    // Initial pull
+    SyncService.pullData();
 
-    console.log(`Collegato alla stanza Cloud: ${roomId}`);
-    const docRef = doc(db, 'rooms', roomId);
+    // Periodic sync every 10 seconds
+    if (syncInterval) clearInterval(syncInterval);
+    syncInterval = setInterval(() => {
+      SyncService.pullData();
+    }, 10000);
 
-    onStatusChange(1);
-
-    unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        if (isPushing) return;
-        
-        const data = docSnap.data() as any;
-        const localTs = AppStorage.Storage.getLastModified();
-        
-        if (data && data.timestamp > localTs) {
-           SyncService.applyRemoteData(data);
-        } else if (data && localTs > data.timestamp) {
-           SyncService.pushData(roomId);
-        }
-      } else {
-        SyncService.pushData(roomId);
-      }
-    });
-
-    window.addEventListener('db-update', () => {
-       if (!isPushing) {
-           clearTimeout(syncTimeout);
-           syncTimeout = setTimeout(() => {
-               SyncService.pushData(roomId);
-           }, 800);
-       }
+    // Listen for local changes to push
+    window.addEventListener('db-update', (e: any) => {
+      if (e.detail.isRemote) return; // Don't push if the change came from a pull
+      
+      if (pushTimeout) clearTimeout(pushTimeout);
+      pushTimeout = setTimeout(() => {
+        SyncService.pushData();
+      }, 1000); // Debounce pushes
     });
   },
 
-  pushData: async (roomId?: string) => {
-    const id = roomId || AppStorage.Config.get().roomId;
-    if (!id) return;
+  // Pull data from server
+  pullData: async () => {
+    if (!currentRoomId) return;
+    try {
+      const res = await fetch(`/api/sync/${currentRoomId}`);
+      if (res.ok) {
+        const data: SyncPayload = await res.json();
+        if (data) {
+          SyncService.merge(data);
+        }
+        updateStatus(true);
+      } else {
+        updateStatus(false);
+      }
+    } catch (e) {
+      console.error("Failed to pull sync data", e);
+      updateStatus(false);
+    }
+  },
 
-    isPushing = true;
-    const payload = {
-      activities: AppStorage.Storage.get(AppStorage.KEYS.activities) || [],
-      movies: AppStorage.Storage.get(AppStorage.KEYS.movies) || [],
-      food: AppStorage.Storage.get(AppStorage.KEYS.food) || [],
-      registry: AppStorage.Storage.get(AppStorage.KEYS.registry) || [],
-      loveNotes: AppStorage.Storage.get(AppStorage.KEYS.loveNotes) || [],
-      logs: AppStorage.Storage.get(AppStorage.KEYS.logs) || [],
-      recipes: AppStorage.Storage.get(AppStorage.KEYS.recipes) || [], // <-- RICETTE AGGIUNTE!
-      timestamp: AppStorage.Storage.getLastModified()
+  // Send local data to server
+  pushData: async () => {
+    if (!currentRoomId) return;
+    
+    const payload: SyncPayload = {
+      activities: Storage.get(KEYS.activities),
+      movies: Storage.get(KEYS.movies),
+      food: Storage.get(KEYS.food),
+      registry: Storage.get(KEYS.registry),
+      loveNotes: Storage.get(KEYS.loveNotes),
+      logs: Storage.get(KEYS.logs),
+      recipes: Storage.get(KEYS.recipes),
+      timestamp: Storage.getLastModified()
     };
     
     try {
-        await setDoc(doc(db, 'rooms', id), payload);
+      const res = await fetch(`/api/sync/${currentRoomId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const mergedData: SyncPayload = await res.json();
+        SyncService.merge(mergedData);
+        console.log("Data pushed to server and merged");
+        updateStatus(true);
+      } else {
+        updateStatus(false);
+      }
     } catch (e) {
-        console.error("Errore Sync:", e);
+      console.error("Failed to push sync data", e);
+      updateStatus(false);
     }
-    setTimeout(() => { isPushing = false; }, 500);
   },
 
-  applyRemoteData: (remote: any) => {
-    if (!remote) return;
-    isPushing = true; 
+  // Merge logic: Combine arrays, dedup by ID, prefer newer updatedAt
+  merge: (remote: SyncPayload) => {
+    let hasChanges = false;
     
-    AppStorage.Storage.set(AppStorage.KEYS.activities, remote.activities || [], remote.timestamp);
-    AppStorage.Storage.set(AppStorage.KEYS.movies, remote.movies || [], remote.timestamp);
-    AppStorage.Storage.set(AppStorage.KEYS.food, remote.food || [], remote.timestamp);
-    AppStorage.Storage.set(AppStorage.KEYS.registry, remote.registry || [], remote.timestamp);
-    AppStorage.Storage.set(AppStorage.KEYS.loveNotes, remote.loveNotes || [], remote.timestamp);
-    AppStorage.Storage.set(AppStorage.KEYS.logs, remote.logs || [], remote.timestamp);
-    AppStorage.Storage.set(AppStorage.KEYS.recipes, remote.recipes || [], remote.timestamp); // <-- RICETTE AGGIUNTE!
-    
-    setTimeout(() => { isPushing = false; }, 500);
+    const mergeCollection = (key: string, remoteItems: any[]) => {
+      if (!remoteItems) return;
+      const localItems = Storage.get<any>(key);
+      const map = new Map();
+
+      // Load local
+      localItems.forEach(i => map.set(i.id, i));
+
+      // Merge remote
+      remoteItems.forEach(remoteItem => {
+        const localItem = map.get(remoteItem.id);
+        if (!localItem) {
+          // New item from partner
+          map.set(remoteItem.id, remoteItem);
+          hasChanges = true;
+        } else {
+          // Conflict: take the one with newer timestamp
+          const localTime = localItem.updatedAt || 0;
+          const remoteTime = remoteItem.updatedAt || 0;
+          if (remoteTime > localTime) {
+            map.set(remoteItem.id, remoteItem);
+            hasChanges = true;
+          }
+        }
+      });
+
+      // Save back to storage if changed
+      if (hasChanges) {
+        Storage.set(key, Array.from(map.values()), remote.timestamp, true);
+      }
+    };
+
+    mergeCollection(KEYS.activities, remote.activities);
+    mergeCollection(KEYS.movies, remote.movies);
+    mergeCollection(KEYS.food, remote.food);
+    mergeCollection(KEYS.registry, remote.registry);
+    mergeCollection(KEYS.loveNotes, remote.loveNotes);
+    mergeCollection(KEYS.logs, remote.logs);
+    mergeCollection(KEYS.recipes, remote.recipes);
   }
 };

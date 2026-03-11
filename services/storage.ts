@@ -13,8 +13,8 @@ export const KEYS = {
   config: 'couple_os_config'
 };
 
-const dispatch = (key: string, data: any) => {
-    window.dispatchEvent(new CustomEvent('db-update', { detail: { key, data } }));
+const dispatch = (key: string, data: any, isRemote: boolean = false) => {
+    window.dispatchEvent(new CustomEvent('db-update', { detail: { key, data, isRemote } }));
 };
 
 export const Storage = {
@@ -24,14 +24,14 @@ export const Storage = {
         } catch(e) { return []; }
     },
     
-    set: <T>(key: string, data: T[], timestamp?: number) => {
+    set: <T>(key: string, data: T[], timestamp?: number, isRemote: boolean = false) => {
         localStorage.setItem(key, JSON.stringify(data));
         const ts = timestamp || Date.now();
         const currentTs = Storage.getLastModified();
         if (ts > currentTs) {
             localStorage.setItem('db_last_modified', ts.toString());
         }
-        dispatch(key, data);
+        dispatch(key, data, isRemote);
     },
 
     getLastModified: (): number => {
@@ -54,10 +54,10 @@ export const Storage = {
     },
 
     // Generic Delete
-    delete: <T extends { id: string }>(key: string, id: string) => {
+    delete: <T extends { id: string, updatedAt?: number, deleted?: boolean }>(key: string, id: string) => {
         const current = Storage.get<T>(key);
-        const filtered = current.filter(i => i.id !== id);
-        Storage.set(key, filtered);
+        const updated = current.map(i => i.id === id ? { ...i, deleted: true, updatedAt: Date.now() } : i);
+        Storage.set(key, updated);
     },
 
     // Subscribe to changes
