@@ -8,7 +8,6 @@ export type Language = 'en';
 export interface BaseItem {
   id: string;
   updatedAt?: number;
-  deleted?: boolean;
 }
 
 export interface Activity extends BaseItem {

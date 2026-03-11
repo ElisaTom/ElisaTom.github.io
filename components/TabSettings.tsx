@@ -3,6 +3,7 @@ import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, Them
 import { format } from 'date-fns';
 import { Download, Upload, Database, Moon, Sun, Palette, Check, RefreshCw, Languages } from 'lucide-react';
 import { DataService } from '../services/dataService';
+import { resetFirebaseConfig } from '../services/firebase';
 import { t } from '../i18n';
 
 interface Props {
@@ -184,6 +185,18 @@ export const TabSettings: React.FC<Props> = ({
               />
            </div>
         </div>
+        
+        {/* Reset Connection */}
+        <button 
+           onClick={() => {
+              if(confirm(t(language, "Are you sure? This will disconnect the database and require reconfiguration."))) {
+                  resetFirebaseConfig();
+              }
+           }}
+           className="w-full mt-4 p-4 border border-rose-200 dark:border-rose-900 rounded-2xl flex items-center justify-center gap-2 text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors text-sm font-bold"
+        >
+           <RefreshCw className="w-4 h-4" /> {t(language, "Reset Database Connection")}
+        </button>
       </div>
 
       <div className="text-center pt-8 text-slate-300 text-xs font-mono">

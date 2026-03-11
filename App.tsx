@@ -104,19 +104,16 @@ export default function App() {
   const language: Language = 'en';
   const [peersCount, setPeersCount] = useState(0);
 
-  // Check initial config and auto-connect sync
+  // Check initial config
   useEffect(() => {
       const conf = Config.get();
       if(conf.isConfigured && conf.roomId) {
           setIsSetup(true);
           if (conf.theme) setTheme(conf.theme);
           if (conf.themeColor) setThemeColor(conf.themeColor);
+          // Auto-connect sync
           SyncService.connect(conf.roomId, (count) => setPeersCount(count));
-      } else {
-          // Fallback: auto-reconnect using persisted roomId if Config is missing
-          SyncService.autoReconnect((count) => setPeersCount(count));
       }
-      return () => SyncService.disconnect();
   }, []);
 
   // Data State

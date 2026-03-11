@@ -6,7 +6,7 @@ import { Activity, Movie, FoodSpot, RegistryItem, LoveNote, Log, Recipe } from '
 // The "Sync" happens separately via SyncService events or manual triggers
 
 const createService = <T>(key: string) => ({
-    subscribe: (cb: (data: T[]) => void) => Storage.subscribe<T>(key, (data) => cb(data.filter((i: any) => !i.deleted))),
+    subscribe: (cb: (data: T[]) => void) => Storage.subscribe<T>(key, cb),
     add: (item: T) => Storage.add(key, item as any),
     update: (id: string, data: Partial<T>) => Storage.update(key, id, data as any),
     delete: (id: string) => Storage.delete(key, id),

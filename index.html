@@ -12,19 +12,10 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/833/833472.png" />
 
     <title>Eli & Nic - Couple OS</title>
-    <link rel="stylesheet" href="./index.css">
-
-    <!-- GitHub Pages SPA redirect handler -->
-    <script>
-      (function(l) {
-        if (l.search[1] === '/' ) {
-          var decoded = l.search.slice(1).split('&').map(function(s) {
-            return s.replace(/~and~/g, '&');
-          }).join('?');
-          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
-        }
-      }(window.location));
-    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Dynamic PWA Manifest -->
     <script>
@@ -48,9 +39,109 @@
       link.href = url;
       document.head.appendChild(link);
     </script>
-  </head>
+
+    <style>
+      body {
+        font-family: 'Outfit', sans-serif;
+        overscroll-behavior-y: none; /* Prevents pull-to-refresh on mobile */
+      }
+      .font-mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.2);
+      }
+      
+      /* Glassmorphism Utilities */
+      .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+      }
+
+      /* Dark Mode Overrides */
+      .dark .glass {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .dark .glass-card {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      }
+      
+      /* Animation Utilities */
+      .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+      .animate-slide-in { animation: slideIn 0.3s ease-out; }
+      .animate-slide-in-up { animation: slideInUp 0.3s ease-out; }
+      .animate-scale-up { animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+      
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes slideInUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                indigo: '#6366f1',
+                fuchsia: '#d946ef',
+                emerald: '#10b981',
+                rose: '#f43f5e',
+                orange: '#f97316',
+                teal: '#14b8a6',
+                pink: '#ec4899',
+              }
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "date-fns": "https://esm.sh/date-fns@^4.1.0",
+    "date-fns/": "https://esm.sh/date-fns@^4.1.0/",
+    "trystero": "https://esm.sh/trystero@0.19.0",
+    "trystero/": "https://esm.sh/trystero@0.19.0/",
+    "firebase/": "https://esm.sh/firebase@^12.9.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
   <body class="bg-slate-50 text-slate-800 overflow-hidden transition-colors duration-500 select-none">
     <div id="root"></div>
-  <script type="module" src="./index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
