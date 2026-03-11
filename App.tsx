@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { DataService } from './services/dataService';
-import { Config } from './services/storage';
+import { Config, setOnDataChange } from './services/storage';
 import { SyncService } from './services/syncService';
+import { pushToFirestore } from './services/firestoreSync';
 import { TabId, Activity, Log, FoodSpot, LoveNote, RegistryItem, Movie, ThemeMode, ThemeColor, Language, Recipe } from './types';
 import { Navigation } from './components/Navigation';
 import { TabHome } from './components/TabHome';
@@ -111,7 +112,9 @@ export default function App() {
           setIsSetup(true);
           if (conf.theme) setTheme(conf.theme);
           if (conf.themeColor) setThemeColor(conf.themeColor);
-          // Auto-connect sync
+          // Push to Firestore on every local data change
+          setOnDataChange(() => pushToFirestore(conf.roomId));
+          // Auto-connect sync (also pulls from Firestore and subscribes)
           SyncService.connect(conf.roomId, (count) => setPeersCount(count));
       }
   }, []);
@@ -214,6 +217,7 @@ export default function App() {
       return <SetupWizard onComplete={() => {
           const conf = Config.get();
           setIsSetup(true);
+          setOnDataChange(() => pushToFirestore(conf.roomId));
           SyncService.connect(conf.roomId, (count) => setPeersCount(count));
       }} />;
   }

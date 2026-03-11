@@ -13,6 +13,14 @@ export const KEYS = {
   config: 'couple_os_config'
 };
 
+// Callback invoked after any local data change, used to push to Firestore.
+// Set to null during Firestore-initiated merges to avoid circular writes.
+let onDataChange: (() => void) | null = null;
+let _firestoreSyncing = false;
+
+export const setOnDataChange = (cb: () => void) => { onDataChange = cb; };
+export const setFirestoreSyncing = (val: boolean) => { _firestoreSyncing = val; };
+
 const dispatch = (key: string, data: any) => {
     window.dispatchEvent(new CustomEvent('db-update', { detail: { key, data } }));
 };
@@ -32,6 +40,7 @@ export const Storage = {
             localStorage.setItem('db_last_modified', ts.toString());
         }
         dispatch(key, data);
+        if (!_firestoreSyncing) onDataChange?.();
     },
 
     getLastModified: (): number => {
