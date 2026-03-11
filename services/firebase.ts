@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -10,15 +10,20 @@ const firebaseConfig = {
   appId: "1:250976980252:web:ba6466c1d8a3966a223ed9"
 };
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+let app;
+let db: any;
+let isConfigured = true;
 
-// Esportazioni di sicurezza
-export const isConfigured = true;
-export const isOffline = false;
-export const saveFirebaseConfig = () => true;
-export const enableOfflineMode = () => {};
-export const resetFirebaseConfig = () => {
-    localStorage.clear();
-    window.location.reload();
-};
+try {
+  try {
+    app = getApp();
+  } catch (e) {
+    app = initializeApp(firebaseConfig);
+  }
+  db = getFirestore(app);
+} catch (e) {
+  console.error("Firebase Initialization Error", e);
+  isConfigured = false;
+}
+
+export { db, isConfigured };
