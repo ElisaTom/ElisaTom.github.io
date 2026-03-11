@@ -13,35 +13,27 @@ export const SyncService = {
     console.log(`Collegato alla stanza Cloud: ${roomId}`);
     const docRef = doc(db, 'rooms', roomId);
 
-    onStatusChange(1); // Accende la spia Verde!
+    onStatusChange(1);
 
     unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        if (isPushing) return; // Ignora gli aggiornamenti causati da noi stessi
+        if (isPushing) return;
         
         const data = docSnap.data() as any;
         const localTs = AppStorage.Storage.getLastModified();
         
-        // Se il Cloud ha dati più recenti: SOVRASCRIVI i dati locali
         if (data && data.timestamp > localTs) {
-           console.log("Novità dal Cloud! Allineamento perfetto in corso...");
            SyncService.applyRemoteData(data);
-        } 
-        // Se i dati locali sono più recenti: AGGIORNA il Cloud
-        else if (data && localTs > data.timestamp) {
-           console.log("Dati locali più recenti, aggiorno il Cloud...");
+        } else if (data && localTs > data.timestamp) {
            SyncService.pushData(roomId);
         }
       } else {
-        // Database vuoto, primo salvataggio assoluto
         SyncService.pushData(roomId);
       }
     });
 
-    // Invia i dati al Cloud ogni volta che fai una modifica sull'app
     window.addEventListener('db-update', () => {
        if (!isPushing) {
-           // Usiamo un piccolo "ritardo" per non intasare Firebase se fai modifiche veloci
            clearTimeout(syncTimeout);
            syncTimeout = setTimeout(() => {
                SyncService.pushData(roomId);
@@ -62,31 +54,29 @@ export const SyncService = {
       registry: AppStorage.Storage.get(AppStorage.KEYS.registry) || [],
       loveNotes: AppStorage.Storage.get(AppStorage.KEYS.loveNotes) || [],
       logs: AppStorage.Storage.get(AppStorage.KEYS.logs) || [],
+      recipes: AppStorage.Storage.get(AppStorage.KEYS.recipes) || [], // <-- RICETTE AGGIUNTE!
       timestamp: AppStorage.Storage.getLastModified()
     };
     
     try {
         await setDoc(doc(db, 'rooms', id), payload);
-        console.log("Salvataggio sul Cloud completato!");
     } catch (e) {
-        console.error("Errore di sincronizzazione Cloud:", e);
+        console.error("Errore Sync:", e);
     }
-    
     setTimeout(() => { isPushing = false; }, 500);
   },
 
   applyRemoteData: (remote: any) => {
     if (!remote) return;
+    isPushing = true; 
     
-    isPushing = true; // Blocchiamo il salvataggio mentre stiamo scaricando
-    
-    // Questo garantisce che tutto combaci col Cloud al 100% (incluse le cancellazioni!)
     AppStorage.Storage.set(AppStorage.KEYS.activities, remote.activities || [], remote.timestamp);
     AppStorage.Storage.set(AppStorage.KEYS.movies, remote.movies || [], remote.timestamp);
     AppStorage.Storage.set(AppStorage.KEYS.food, remote.food || [], remote.timestamp);
     AppStorage.Storage.set(AppStorage.KEYS.registry, remote.registry || [], remote.timestamp);
     AppStorage.Storage.set(AppStorage.KEYS.loveNotes, remote.loveNotes || [], remote.timestamp);
     AppStorage.Storage.set(AppStorage.KEYS.logs, remote.logs || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.recipes, remote.recipes || [], remote.timestamp); // <-- RICETTE AGGIUNTE!
     
     setTimeout(() => { isPushing = false; }, 500);
   }
