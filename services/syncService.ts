@@ -1,24 +1,88 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
+import * as AppStorage from './storage';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBROrCpV4iUyEixLdbdhBdrKfwd_urUvWg",
-  authDomain: "elinic-60564.firebaseapp.com",
-  projectId: "elinic-60564",
-  storageBucket: "elinic-60564.firebasestorage.app",
-  messagingSenderId: "250976980252",
-  appId: "1:250976980252:web:ba6466c1d8a3966a223ed9"
-};
+let unsubscribe: any = null;
+let isPushing = false;
+let syncTimeout: any = null;
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export const SyncService = {
+  connect: (roomId: string, onStatusChange: (peers: number) => void) => {
+    if (unsubscribe) return;
 
-// Esportazioni di sicurezza per non far crashare i file che le cercano
-export const isConfigured = true;
-export const isOffline = false;
-export const saveFirebaseConfig = () => true;
-export const enableOfflineMode = () => {};
-export const resetFirebaseConfig = () => {
-    localStorage.clear();
-    window.location.reload();
+    console.log(`Collegato alla stanza Cloud: ${roomId}`);
+    const docRef = doc(db, 'rooms', roomId);
+
+    onStatusChange(1); // Accende la spia Verde!
+
+    unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        if (isPushing) return;
+        
+        const data = docSnap.data() as any;
+        const localTs = AppStorage.Storage.getLastModified();
+        
+        if (data && data.timestamp > localTs) {
+           console.log("Novità dal Cloud! Allineamento in corso...");
+           SyncService.applyRemoteData(data);
+        } 
+        else if (data && localTs > data.timestamp) {
+           console.log("Dati locali più recenti, aggiorno il Cloud...");
+           SyncService.pushData(roomId);
+        }
+      } else {
+        SyncService.pushData(roomId);
+      }
+    });
+
+    window.addEventListener('db-update', () => {
+       if (!isPushing) {
+           clearTimeout(syncTimeout);
+           syncTimeout = setTimeout(() => {
+               SyncService.pushData(roomId);
+           }, 800);
+       }
+    });
+  },
+
+  pushData: async (roomId?: string) => {
+    const id = roomId || AppStorage.Config.get().roomId;
+    if (!id) return;
+
+    isPushing = true;
+    const payload = {
+      activities: AppStorage.Storage.get(AppStorage.KEYS.activities) || [],
+      movies: AppStorage.Storage.get(AppStorage.KEYS.movies) || [],
+      food: AppStorage.Storage.get(AppStorage.KEYS.food) || [],
+      registry: AppStorage.Storage.get(AppStorage.KEYS.registry) || [],
+      loveNotes: AppStorage.Storage.get(AppStorage.KEYS.loveNotes) || [],
+      logs: AppStorage.Storage.get(AppStorage.KEYS.logs) || [],
+      recipes: AppStorage.Storage.get(AppStorage.KEYS.recipes) || [], 
+      timestamp: AppStorage.Storage.getLastModified()
+    };
+    
+    try {
+        await setDoc(doc(db, 'rooms', id), payload);
+    } catch (e) {
+        console.error("Errore di sincronizzazione Cloud:", e);
+    }
+    
+    setTimeout(() => { isPushing = false; }, 500);
+  },
+
+  applyRemoteData: (remote: any) => {
+    if (!remote) return;
+    
+    isPushing = true; 
+    
+    AppStorage.Storage.set(AppStorage.KEYS.activities, remote.activities || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.movies, remote.movies || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.food, remote.food || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.registry, remote.registry || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.loveNotes, remote.loveNotes || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.logs, remote.logs || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.recipes, remote.recipes || [], remote.timestamp);
+    
+    setTimeout(() => { isPushing = false; }, 500);
+  }
 };
