@@ -1,10 +1,17 @@
 {
   "hosting": {
-    "public": "dist",
+    "public": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      "vite.config.ts",
+      ".env*",
+      "metadata.json",
+      ".firebaserc"
     ],
     "rewrites": [
       {
