@@ -4,6 +4,7 @@ import * as AppStorage from './storage';
 
 let unsubscribe: any = null;
 let isPushing = false;
+let syncTimeout: any = null;
 
 export const SyncService = {
   connect: (roomId: string, onStatusChange: (peers: number) => void) => {
@@ -12,34 +13,39 @@ export const SyncService = {
     console.log(`Collegato alla stanza Cloud: ${roomId}`);
     const docRef = doc(db, 'rooms', roomId);
 
-    onStatusChange(1);
+    onStatusChange(1); // Accende la spia Verde!
 
     unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        if (isPushing) return; // Ignora i rimbalzi mentre stiamo salvando noi
+        if (isPushing) return; // Ignora gli aggiornamenti causati da noi stessi
         
         const data = docSnap.data() as any;
         const localTs = AppStorage.Storage.getLastModified();
         
-        // Se il Cloud ha dati più nuovi, SCARICALI
+        // Se il Cloud ha dati più recenti: SOVRASCRIVI i dati locali
         if (data && data.timestamp > localTs) {
-           console.log("Novità dal Cloud! Scarico i dati...");
-           SyncService.merge(data);
+           console.log("Novità dal Cloud! Allineamento perfetto in corso...");
+           SyncService.applyRemoteData(data);
         } 
-        // Se invece il telefono ha dati più nuovi, CARICALI
+        // Se i dati locali sono più recenti: AGGIORNA il Cloud
         else if (data && localTs > data.timestamp) {
            console.log("Dati locali più recenti, aggiorno il Cloud...");
            SyncService.pushData(roomId);
         }
       } else {
-        // Se la stanza è vuota (primo accesso assoluto), crea il salvataggio
+        // Database vuoto, primo salvataggio assoluto
         SyncService.pushData(roomId);
       }
     });
 
+    // Invia i dati al Cloud ogni volta che fai una modifica sull'app
     window.addEventListener('db-update', () => {
        if (!isPushing) {
-           SyncService.pushData(roomId);
+           // Usiamo un piccolo "ritardo" per non intasare Firebase se fai modifiche veloci
+           clearTimeout(syncTimeout);
+           syncTimeout = setTimeout(() => {
+               SyncService.pushData(roomId);
+           }, 800);
        }
     });
   },
@@ -60,46 +66,28 @@ export const SyncService = {
     };
     
     try {
-        await setDoc(doc(db, 'rooms', id), payload, { merge: true });
+        await setDoc(doc(db, 'rooms', id), payload);
+        console.log("Salvataggio sul Cloud completato!");
     } catch (e) {
         console.error("Errore di sincronizzazione Cloud:", e);
     }
     
-    setTimeout(() => { isPushing = false; }, 1000);
+    setTimeout(() => { isPushing = false; }, 500);
   },
 
-  merge: (remote: any) => {
+  applyRemoteData: (remote: any) => {
     if (!remote) return;
-    const mergeCollection = (key: string, remoteItems: any[]) => {
-      if (!remoteItems) return;
-      const localItems = AppStorage.Storage.get<any>(key) || [];
-      const map = new Map();
-
-      localItems.forEach((i: any) => map.set(i.id, i));
-
-      remoteItems.forEach((remoteItem: any) => {
-        const localItem = map.get(remoteItem.id);
-        if (!localItem) {
-          map.set(remoteItem.id, remoteItem);
-        } else {
-          const localTime = localItem.updatedAt || 0;
-          const remoteTime = remoteItem.updatedAt || 0;
-          if (remoteTime > localTime) {
-            map.set(remoteItem.id, remoteItem);
-          }
-        }
-      });
-
-      AppStorage.Storage.set(key, Array.from(map.values()), remote.timestamp);
-    };
-
-    isPushing = true;
-    mergeCollection(AppStorage.KEYS.activities, remote.activities);
-    mergeCollection(AppStorage.KEYS.movies, remote.movies);
-    mergeCollection(AppStorage.KEYS.food, remote.food);
-    mergeCollection(AppStorage.KEYS.registry, remote.registry);
-    mergeCollection(AppStorage.KEYS.loveNotes, remote.loveNotes);
-    mergeCollection(AppStorage.KEYS.logs, remote.logs);
+    
+    isPushing = true; // Blocchiamo il salvataggio mentre stiamo scaricando
+    
+    // Questo garantisce che tutto combaci col Cloud al 100% (incluse le cancellazioni!)
+    AppStorage.Storage.set(AppStorage.KEYS.activities, remote.activities || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.movies, remote.movies || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.food, remote.food || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.registry, remote.registry || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.loveNotes, remote.loveNotes || [], remote.timestamp);
+    AppStorage.Storage.set(AppStorage.KEYS.logs, remote.logs || [], remote.timestamp);
+    
     setTimeout(() => { isPushing = false; }, 500);
   }
 };
