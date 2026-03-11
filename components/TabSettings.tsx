@@ -1,5 +1,5 @@
 import React from 'react';
-import { Log, Activity, FoodSpot, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor, Language } from '../types';
+import { Log, Activity, FoodSpot, Recipe, Movie, RegistryItem, LoveNote, ThemeMode, ThemeColor, Language } from '../types';
 import { format } from 'date-fns';
 import { Download, Upload, Database, Moon, Sun, Palette, Check } from 'lucide-react';
 import { DataService } from '../services/dataService';
@@ -9,6 +9,7 @@ interface Props {
   logs: Log[];
   activities: Activity[];
   foodSpots: FoodSpot[];
+  recipes: Recipe[];
   movies: Movie[];
   registry: RegistryItem[];
   loveNotes: LoveNote[];
