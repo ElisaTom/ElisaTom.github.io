@@ -1,7 +1,7 @@
 
 import { Storage, KEYS } from './storage';
 import { db } from './firebase';
-import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 
 // Types of data to sync
 interface SyncPayload {
@@ -15,11 +15,30 @@ interface SyncPayload {
   timestamp: number;
 }
 
+const COLLECTION_KEYS = ['activities', 'movies', 'food', 'registry', 'loveNotes', 'logs', 'recipes'] as const;
+type CollectionKey = typeof COLLECTION_KEYS[number];
+
+const KEY_MAP: Record<CollectionKey, string> = {
+  activities: KEYS.activities,
+  movies: KEYS.movies,
+  food: KEYS.food,
+  registry: KEYS.registry,
+  loveNotes: KEYS.loveNotes,
+  logs: KEYS.logs,
+  recipes: KEYS.recipes,
+};
+
 let currentRoomId: string | null = null;
-let pushTimeout: any = null;
+let pushTimeout: ReturnType<typeof setTimeout> | null = null;
 let isConnected = false;
 let statusCallback: ((peers: number) => void) | null = null;
-let unsubscribeSnapshot: any = null;
+let unsubscribeSnapshot: (() => void) | null = null;
+// Bug 3 fix: AbortController to clean up event listeners on reconnect
+let dbUpdateAbort: AbortController | null = null;
+// Bug 4 fix: flags to prevent sync loops
+let isPushing = false;
+let lastPushedTimestamp = 0;
+let isMerging = false;
 
 const updateStatus = (status: boolean) => {
   if (isConnected !== status) {
@@ -28,26 +47,60 @@ const updateStatus = (status: boolean) => {
   }
 };
 
+// Bug 1 fix: mergeCollection is a standalone function with its own hasChanges per collection
+const mergeCollection = (localItems: any[], remoteItems: any[]): any[] | null => {
+  if (!remoteItems || remoteItems.length === 0) return null;
+
+  const map = new Map<string, any>();
+  let hasChanges = false;
+  const localSize = localItems.length;
+
+  localItems.forEach(i => map.set(i.id, i));
+
+  remoteItems.forEach(remoteItem => {
+    const localItem = map.get(remoteItem.id);
+    if (!localItem) {
+      map.set(remoteItem.id, remoteItem);
+      hasChanges = true;
+    } else {
+      const localTime = localItem.updatedAt || 0;
+      const remoteTime = remoteItem.updatedAt || 0;
+      if (remoteTime > localTime) {
+        map.set(remoteItem.id, remoteItem);
+        hasChanges = true;
+      }
+    }
+  });
+
+  if (!hasChanges && map.size === localSize) return null;
+  return Array.from(map.values());
+};
+
 export const SyncService = {
   // Connect to the room and start real-time sync
   connect: (roomId: string, onStatusChange: (peers: number) => void) => {
-    if (currentRoomId === roomId) return; // Already connected
-    
-    console.log(`Connecting to Firebase Room: ${roomId}`);
+    if (currentRoomId === roomId && unsubscribeSnapshot) return; // Already connected
+
+    // Bug 3 fix: clean up previous connection before starting a new one
+    SyncService.disconnect();
+
+    console.log(`[Sync] Connecting to Firebase Room: ${roomId}`);
     currentRoomId = roomId;
     statusCallback = onStatusChange;
-    
-    if (unsubscribeSnapshot) {
-      unsubscribeSnapshot();
-    }
+
+    // Bug 5 fix: persist roomId for auto-reconnect (failure is acceptable in private browsing mode)
+    try { localStorage.setItem('sync_room_id', roomId); } catch (_e) {}
 
     const roomRef = doc(db, 'rooms', roomId);
-    
+
     // Listen for real-time updates from Firebase
     unsubscribeSnapshot = onSnapshot(roomRef, (docSnap) => {
+      // Bug 4 fix: skip snapshot-triggered merges while we are pushing
+      if (isPushing) return;
+
       if (docSnap.exists()) {
         const data = docSnap.data() as SyncPayload;
-        SyncService.merge(data);
+        SyncService.mergeRemote(data);
         updateStatus(true);
       } else {
         // Room doesn't exist yet, push initial data
@@ -55,89 +108,134 @@ export const SyncService = {
         updateStatus(true);
       }
     }, (error) => {
-      console.error("Firebase sync error:", error);
+      console.error('[Sync] Firebase error:', error);
       updateStatus(false);
     });
 
-    // Listen for local changes to push
+    // Bug 3 fix: use AbortController so the listener is removed when disconnect() is called
+    dbUpdateAbort = new AbortController();
+
     window.addEventListener('db-update', (e: any) => {
-      if (e.detail.isRemote) return; // Don't push if the change came from a pull
-      
+      // Bug 4 fix: skip if change came from a remote merge
+      if (e.detail.isRemote || isMerging) return;
+
       if (pushTimeout) clearTimeout(pushTimeout);
       pushTimeout = setTimeout(() => {
         SyncService.pushData();
-      }, 1000); // Debounce pushes
-    });
+      }, 1500); // 1.5 s debounce: long enough to batch rapid edits, short enough to feel instant
+    }, { signal: dbUpdateAbort.signal });
+
+    // Bug 5 fix: re-sync when app comes to foreground (critical for iOS Safari tab suspension)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && currentRoomId) {
+        console.log('[Sync] App became visible, re-syncing...');
+        SyncService.pushData();
+      }
+    }, { signal: dbUpdateAbort.signal });
   },
 
-  // Send local data to server
+  disconnect: () => {
+    if (unsubscribeSnapshot) {
+      unsubscribeSnapshot();
+      unsubscribeSnapshot = null;
+    }
+    if (dbUpdateAbort) {
+      dbUpdateAbort.abort();
+      dbUpdateAbort = null;
+    }
+    if (pushTimeout) {
+      clearTimeout(pushTimeout);
+      pushTimeout = null;
+    }
+    currentRoomId = null;
+    updateStatus(false);
+  },
+
+  // Bug 2 fix: read remote state first, merge bidirectionally, then write
   pushData: async () => {
-    if (!currentRoomId) return;
-    
-    const payload: SyncPayload = {
-      activities: Storage.get(KEYS.activities) || [],
-      movies: Storage.get(KEYS.movies) || [],
-      food: Storage.get(KEYS.food) || [],
-      registry: Storage.get(KEYS.registry) || [],
-      loveNotes: Storage.get(KEYS.loveNotes) || [],
-      logs: Storage.get(KEYS.logs) || [],
-      recipes: Storage.get(KEYS.recipes) || [],
-      timestamp: Storage.getLastModified()
-    };
-    
+    if (!currentRoomId || isPushing) return;
+
+    const currentTimestamp = Storage.getLastModified();
+    // Bug 4 fix: skip push if nothing has changed since the last push
+    if (currentTimestamp <= lastPushedTimestamp) return;
+
+    isPushing = true;
+
     try {
       const roomRef = doc(db, 'rooms', currentRoomId);
-      await setDoc(roomRef, payload, { merge: true });
-      console.log("Data pushed to Firebase");
+
+      // Read current remote state to avoid overwriting partner's data
+      const remoteSnap = await getDoc(roomRef);
+      const remoteData = remoteSnap.exists() ? (remoteSnap.data() as SyncPayload) : null;
+
+      // Build bidirectionally-merged payload
+      const merged: any = {};
+
+      for (const key of COLLECTION_KEYS) {
+        const localItems: any[] = Storage.get<any>(KEY_MAP[key]) || [];
+        const remoteItems: any[] = remoteData?.[key] || [];
+
+        const map = new Map<string, any>();
+        remoteItems.forEach((i: any) => map.set(i.id, i));
+        localItems.forEach((localItem: any) => {
+          const remoteItem = map.get(localItem.id);
+          if (!remoteItem) {
+            map.set(localItem.id, localItem);
+          } else {
+            const localTime = localItem.updatedAt || 0;
+            const remoteTime = remoteItem.updatedAt || 0;
+            // Local wins on equal timestamps during push (we are the writer for this device's changes)
+            if (localTime >= remoteTime) {
+              map.set(localItem.id, localItem);
+            }
+            // else keep remote (already in map)
+          }
+        });
+
+        merged[key] = Array.from(map.values());
+      }
+
+      merged.timestamp = Math.max(currentTimestamp, remoteData?.timestamp || 0);
+
+      await setDoc(roomRef, merged);
+      lastPushedTimestamp = merged.timestamp;
+      console.log('[Sync] Data pushed to Firebase');
       updateStatus(true);
     } catch (e) {
-      console.error("Failed to push sync data to Firebase", e);
+      console.error('[Sync] Failed to push', e);
       updateStatus(false);
+    } finally {
+      isPushing = false;
     }
   },
 
-  // Merge logic: Combine arrays, dedup by ID, prefer newer updatedAt
-  merge: (remote: SyncPayload) => {
-    let hasChanges = false;
-    
-    const mergeCollection = (key: string, remoteItems: any[]) => {
-      if (!remoteItems) return;
-      const localItems = Storage.get<any>(key) || [];
-      const map = new Map();
+  // Bug 1 fix: each collection has independent hasChanges via standalone mergeCollection()
+  mergeRemote: (remote: SyncPayload) => {
+    isMerging = true;
 
-      // Load local
-      localItems.forEach(i => map.set(i.id, i));
+    for (const key of COLLECTION_KEYS) {
+      const storageKey = KEY_MAP[key];
+      const localItems: any[] = Storage.get<any>(storageKey) || [];
+      const remoteItems: any[] = remote[key] || [];
 
-      // Merge remote
-      remoteItems.forEach(remoteItem => {
-        const localItem = map.get(remoteItem.id);
-        if (!localItem) {
-          // New item from partner
-          map.set(remoteItem.id, remoteItem);
-          hasChanges = true;
-        } else {
-          // Conflict: take the one with newer timestamp
-          const localTime = localItem.updatedAt || 0;
-          const remoteTime = remoteItem.updatedAt || 0;
-          if (remoteTime > localTime) {
-            map.set(remoteItem.id, remoteItem);
-            hasChanges = true;
-          }
-        }
-      });
-
-      // Save back to storage if changed
-      if (hasChanges) {
-        Storage.set(key, Array.from(map.values()), remote.timestamp, true);
+      const merged = mergeCollection(localItems, remoteItems);
+      if (merged) {
+        Storage.set(storageKey, merged, remote.timestamp, true);
       }
-    };
+    }
 
-    mergeCollection(KEYS.activities, remote.activities);
-    mergeCollection(KEYS.movies, remote.movies);
-    mergeCollection(KEYS.food, remote.food);
-    mergeCollection(KEYS.registry, remote.registry);
-    mergeCollection(KEYS.loveNotes, remote.loveNotes);
-    mergeCollection(KEYS.logs, remote.logs);
-    mergeCollection(KEYS.recipes, remote.recipes);
-  }
+    isMerging = false;
+  },
+
+  // Bug 5 fix: auto-reconnect on app init using persisted roomId
+  autoReconnect: (onStatusChange: (peers: number) => void) => {
+    try {
+      const savedRoom = localStorage.getItem('sync_room_id');
+      if (savedRoom && !currentRoomId) {
+        SyncService.connect(savedRoom, onStatusChange);
+      }
+    } catch (_e) {}
+  },
+
+  getRoomId: () => currentRoomId,
 };
