@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { db, clientId } from './firebase';
 import { Storage, KEYS, setFirestoreSyncing } from './storage';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
@@ -46,6 +46,7 @@ export const pushToFirestore = async (roomId: string): Promise<void> => {
     if (!roomId) return;
     try {
         const ref = doc(db, 'rooms', roomId);
+        // Write full snapshot; clients will merge on read using item.updatedAt
         await setDoc(ref, {
             activities: Storage.get(KEYS.activities),
             movies: Storage.get(KEYS.movies),
@@ -54,7 +55,8 @@ export const pushToFirestore = async (roomId: string): Promise<void> => {
             loveNotes: Storage.get(KEYS.loveNotes),
             logs: Storage.get(KEYS.logs),
             recipes: Storage.get(KEYS.recipes),
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
+            lastModifiedBy: clientId
         });
         console.log('Pushed to Firestore');
     } catch (e) {
@@ -92,8 +94,8 @@ export const subscribeToFirestore = (roomId: string, callback: () => void): (() 
             mergeDocumentData(snap.data());
             callback();
         },
-        (e) => {
-            console.error('Firestore snapshot error:', e);
+        (err) => {
+            console.error('Firestore onSnapshot error:', err);
         }
     );
 
